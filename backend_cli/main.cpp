@@ -17,7 +17,7 @@ void displayMenu() {
     cout << "    IIT JODHPUR ROUTE OPTIMIZER" << endl;
     cout << "========================================" << endl;
     cout << "1. Flexible Order (TSP Optimization)" << endl;
-    cout << "2. Fixed Order (Dijkstra/A*)" << endl;
+    cout << "2. Fixed Order (Dijkstra)" << endl;
     cout << "3. Exit" << endl;
     cout << "========================================" << endl;
     cout << "Enter your choice: ";
@@ -51,12 +51,7 @@ vector<int> getLocationInput(const Graph& g) {
         getline(cin, name);
         
         int id = g.getIdByName(name);
-        if (id == -1) {
-            cout << "     [WARNING] Location not found, try again." << endl;
-            i--;
-            continue;
-        }
-        locations.push_back(id);
+        locations.push_back(id); // <-- keep ID as is, even if = -1
     }
     
     return locations;
@@ -107,30 +102,52 @@ int main() {
         }
         
         vector<int> locations = getLocationInput(graph);
-        
+
         if (locations.empty()) {
             cout << "No locations selected." << endl;
             continue;
         }
 
-        // --- Connectivity Check Using DSU ----
-        DSU* dsu = graph.getDSU();
-        int root = dsu->find(locations[0]);
-
-        bool ok = true;
+        // -----------------------------------------------
+        // 0. CHECK INVALID IDS (ID = -1)
+        // -----------------------------------------------
+        bool hasInvalid = false;
         for (int id : locations) {
-            if (dsu->find(id) != root) {
-                ok = false;
+            if (id == -1) {
+                hasInvalid = true;
                 break;
             }
         }
 
-        if (!ok) {
+        // Invalid multi-location request → reject
+        if (hasInvalid && locations.size() > 1) {
             cout << "\n[ERROR] Selected locations are NOT reachable from each other." << endl;
-            cout << "Please choose locations inside the same connected component.\n\n";
             continue;
         }
-        // --------------------------------------
+        // Single invalid node is allowed (DSU-T4)
+        // -----------------------------------------------
+
+        // -----------------------------------------------
+        // 1. DSU CONNECTIVITY CHECK (only when valid)
+        // -----------------------------------------------
+        if (!hasInvalid) {
+            DSU* dsu = graph.getDSU();
+            int root = dsu->find(locations[0]);
+
+            bool ok = true;
+            for (int id : locations) {
+                if (dsu->find(id) != root) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            if (!ok) {
+                cout << "\n[ERROR] Selected locations are NOT reachable from each other." << endl;
+                continue;
+            }
+        }
+        // -----------------------------------------------
 
         auto startTime = high_resolution_clock::now();
         

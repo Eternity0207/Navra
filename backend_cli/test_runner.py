@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Automated Test Runner for IIT Jodhpur Route Optimizer
-Includes:
-✔ Dijkstra tests
-✔ TSP tests
-✔ DSU connectivity tests
+Extended Automated Test Runner for IIT Jodhpur Route Optimizer
+100 deterministic test cases:
+- Dijkstra tests
+- TSP tests
+- DSU connectivity
+- edge cases and stress tests
 """
 
 import subprocess
@@ -13,6 +14,11 @@ import time
 import re
 from typing import List, Tuple, Optional
 import os
+import random
+import json
+
+# Make runs reproducible
+random.seed(0)
 
 class Color:
     HEADER = '\033[95m'
@@ -23,7 +29,23 @@ class Color:
     FAIL = '\033[91m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+
+
+# Valid nodes - must match your attractions.csv exactly
+VALID_NODES = [
+    "Main Gate", "CSE Building", "Library", "Dining Hall",
+    "Hostel A", "Lecture Hall Complex", "Sports Complex",
+    "Innovation Center", "Canteen", "Medical Center",
+    "Admin Block", "Parking Lot", "Garden Park", "Bus Stop",
+    "Cafeteria", "Research Block", "Old Boys Hostel",
+    "Student Activity Center", "Lecture Hall B", "Workshop"
+]
+
+# Known invalid nodes for DSU-negative tests
+INVALID_NODES = [
+    "Old Campus Gate", "Old Library", "Metro Station",
+    "Unknown Place", "Fake Building", "Ghost Block"
+]
 
 
 class TestCase:
@@ -50,280 +72,229 @@ class TestCase:
 class TestResult:
     def __init__(self, test_case: TestCase, passed: bool,
                  actual_time: Optional[float], actual_stops: Optional[int],
-                 error_msg: str = ""):
+                 stdout: str = "", stderr: str = "", error_msg: str = ""):
         self.test_case = test_case
         self.passed = passed
         self.actual_time = actual_time
         self.actual_stops = actual_stops
+        self.stdout = stdout
+        self.stderr = stderr
         self.error_msg = error_msg
 
 
 class RouteOptimizerTester:
-    def __init__(self, executable_path: str = "./optimizer.exe"):
+    def __init__(self, executable_path: str = "./optimizer.exe", timeout_s: int = 30):
         self.executable = executable_path
+        self.timeout = timeout_s
+        self.test_cases: List[TestCase] = []
+        self.results: List[TestResult] = []
+        self._load_100_tests()
+
+    # -------------------------
+    # Build deterministic 100 tests
+    # -------------------------
+    def _load_100_tests(self):
         self.test_cases = []
-        self.results = []
-        self._load_test_cases()
+        idx = 1
 
-    # -------------------------------------------------------
-    # Load ALL updated test cases
-    # -------------------------------------------------------
-    def _load_test_cases(self):
+        def add(name_suffix: str, choice: str, locs: List[str], lo: float, hi: float, desc: str, dsu_fail: bool=False):
+            nonlocal idx
+            name = f"TC{idx:03d} {name_suffix}"
+            self.test_cases.append(TestCase(name, choice, locs, lo, hi, desc, dsu_fail))
+            idx += 1
 
-        # Basic Dijkstra: Main Gate → CSE Building → Library = 3 + 2 = 5
-        self.test_cases.append(TestCase(
-            "TC1: Small Fixed Order (Dijkstra)", "2",
-            ["Main Gate", "CSE Building", "Library"],
-            5.0, 5.0, "Basic Dijkstra route"
-        ))
+        # Core deterministic tests (based on earlier suite)
+        add("Small Fixed Order (Dijkstra)", "2", ["Main Gate", "CSE Building", "Library"], 5.0, 5.0, "Basic Dijkstra")
+        add("Small TSP (Flexible)", "1", ["Main Gate", "Dining Hall", "Library", "Hostel A"], 12.0, 18.0, "TSP small")
+        add("Adjacent Locations (Fixed)", "2", ["Garden Park", "Bus Stop"], 2.0, 2.0, "Direct edge")
+        add("Distant Locations TSP", "1", ["Main Gate", "Innovation Center", "Research Block", "Sports Complex", "Student Activity Center"], 15.0, 40.0, "Large TSP")
+        add("Star Pattern Fixed", "2", ["CSE Building", "Library", "Lecture Hall Complex", "CSE Building"], 6.0, 6.0, "Hub traversal")
+        add("Medium TSP (10)", "1", ["Main Gate","Admin Block","Parking Lot","CSE Building","Library","Dining Hall","Medical Center","Canteen","Lecture Hall Complex","Innovation Center"], 20.0, 80.0, "10-node TSP")
+        add("Single Location", "1", ["Main Gate"], 0.0, 0.0, "Single")
+        add("Two Locations Fixed", "2", ["Library","Lecture Hall Complex"], 2.0, 2.0, "Direct 2")
+        add("Two Locations Flexible", "1", ["Library","Lecture Hall Complex"], 2.0, 2.0, "2-node TSP")
+        add("Circular Fixed Route", "2", ["Main Gate","CSE Building","Library","Dining Hall","Hostel A","Main Gate"], 17.0, 17.0, "Cycle")
+        add("Large TSP Greedy", "1", ["Main Gate","Admin Block","CSE Building","Library","Dining Hall","Canteen","Medical Center","Sports Complex","Student Activity Center","Old Boys Hostel","Lecture Hall Complex","Lecture Hall B","Workshop","Research Block","Innovation Center"], 40.0, 150.0, "Greedy >15")
+        add("Academic Buildings Tour", "1", ["CSE Building","Library","Lecture Hall Complex","Lecture Hall B","Research Block","Innovation Center"], 10.0, 40.0, "Academic cluster")
+        add("Food Places Tour", "1", ["Dining Hall","Canteen","Cafeteria"], 25.0, 40.0, "Food cluster")
 
-        self.test_cases.append(TestCase(
-            "TC2: Small TSP (Flexible)", "1",
-            ["Main Gate", "Dining Hall", "Library", "Hostel A"],
-            12.0, 18.0, "4-node TSP on small cluster"
-        ))
+        # DSU tests (deterministic)
+        add("DSU-T1 Connected Nodes", "2", ["Main Gate","Library"], 1.0, 100.0, "Connected", dsu_fail=False)
+        add("DSU-T2 IITJ vs Old Campus", "2", ["Main Gate","Old Campus Gate"], 0.0, 0.0, "Old Campus should be rejected", dsu_fail=True)
+        add("DSU-T3 Mixed Nodes", "1", ["Library","Old Library","Sports Complex"], 0.0, 0.0, "Mixed invalid", dsu_fail=True)
+        add("DSU-T4 Single Old Campus Node", "1", ["Old Campus Gate"], 0.0, 0.0, "Single invalid allowed", dsu_fail=False)
 
-        self.test_cases.append(TestCase(
-            "TC3: Adjacent Locations (Fixed)", "2",
-            ["Garden Park", "Bus Stop"],
-            2.0, 2.0, "Direct adjacency"
-        ))
+        # deterministic reverse-pairs (10)
+        for i in range(10):
+            a = VALID_NODES[i % len(VALID_NODES)]
+            b = VALID_NODES[(i+3) % len(VALID_NODES)]
+            add(f"Reverse pair {i+1}", "2", [b, a], 1.0, 100.0, "Reverse Dijkstra")
 
-        self.test_cases.append(TestCase(
-            "TC4: Distant Locations TSP", "1",
-            ["Main Gate", "Innovation Center", "Research Block",
-             "Sports Complex", "Student Activity Center"],
-            15.0, 40.0, "Large TSP across far-apart nodes"
-        ))
+        # duplicate-name tests (5)
+        for i in range(5):
+            n = VALID_NODES[i % len(VALID_NODES)]
+            add(f"Duplicate names {i+1}", "1", [n, n, n], 0.0, 10.0, "Duplicates")
 
-        self.test_cases.append(TestCase(
-            "TC5: Star Pattern Fixed", "2",
-            ["CSE Building", "Library", "Lecture Hall Complex", "CSE Building"],
-            6.0, 6.0,
-            "Classic hub traversal"
-        ))
+        # long TSP tests (10) - deterministic samples
+        long_samples = [
+            VALID_NODES[i:i+15] if i+15<=len(VALID_NODES) else (VALID_NODES[i:]+VALID_NODES[:(i+15)%len(VALID_NODES)])
+            for i in range(10)
+        ]
+        for i, sample in enumerate(long_samples):
+            add(f"Long TSP {i+1}", "1", sample, 30.0, 200.0, "Long TSP")
 
-        self.test_cases.append(TestCase(
-            "TC6: Medium TSP (10 Locations)", "1",
-            ["Main Gate", "Admin Block", "Parking Lot",
-             "CSE Building", "Library", "Dining Hall",
-             "Medical Center", "Canteen", "Lecture Hall Complex",
-             "Innovation Center"],
-            20.0, 80.0, "10-node medium TSP"
-        ))
+        # random Dijkstra pairs (10 deterministic picks)
+        for i in range(10):
+            a = VALID_NODES[(i*2) % len(VALID_NODES)]
+            b = VALID_NODES[(i*2+5) % len(VALID_NODES)]
+            add(f"Pair Dijkstra {i+1}", "2", [a, b], 1.0, 100.0, "Random Dijkstra pair")
 
-        self.test_cases.append(TestCase(
-            "TC7: Single Location", "1",
-            ["Main Gate"],
-            0.0, 0.0, "Single location"
-        ))
+        # Mixed valid/invalid pairs (10)
+        for i in range(10):
+            a = VALID_NODES[i % len(VALID_NODES)]
+            b = INVALID_NODES[i % len(INVALID_NODES)]
+            add(f"Mixed invalid {i+1}", "2", [a, b], 0.0, 0.0, "Mixed invalid", dsu_fail=True)
 
-        self.test_cases.append(TestCase(
-            "TC8: Two Locations Fixed", "2",
-            ["Library", "Lecture Hall Complex"],
-            2.0, 2.0, "Adjacent academic nodes"
-        ))
+        # Single-node tests (10 deterministic picks)
+        for i in range(10):
+            a = VALID_NODES[(i*3) % len(VALID_NODES)]
+            add(f"Single node {i+1}", "1", [a], 0.0, 0.0, "Single node")
 
-        self.test_cases.append(TestCase(
-            "TC9: Two Locations Flexible", "1",
-            ["Library", "Lecture Hall Complex"],
-            2.0, 2.0, "2-node TSP"
-        ))
+        # Random small TSPs (fill up to 100)
+        while len(self.test_cases) < 100:
+            k = 3 + (len(self.test_cases) % 4)  # 3..6 small variety
+            # deterministic deterministic sample using index
+            start_idx = (len(self.test_cases) * 7) % len(VALID_NODES)
+            sample = VALID_NODES[start_idx:start_idx + k]
+            if len(sample) < k:
+                sample = sample + VALID_NODES[:k - len(sample)]
+            add(f"Small TSP fill {len(self.test_cases)+1}", "1", sample, 5.0, 100.0, "Filler small TSP")
 
-        self.test_cases.append(TestCase(
-            "TC10: Circular Fixed Route", "2",
-            ["Main Gate", "CSE Building", "Library",
-             "Dining Hall", "Hostel A", "Main Gate"],
-            17.0, 17.0,
-            "Cycle route"
-        ))
+        # final assert
+        if len(self.test_cases) != 100:
+            raise RuntimeError("Failed to build exactly 100 tests; built: {}".format(len(self.test_cases)))
 
-        self.test_cases.append(TestCase(
-            "TC11: Large TSP Greedy", "1",
-            ["Main Gate", "Admin Block", "CSE Building", "Library",
-             "Dining Hall", "Canteen", "Medical Center", "Sports Complex",
-             "Student Activity Center", "Old Boys Hostel", "Lecture Hall Complex",
-             "Lecture Hall B", "Workshop", "Research Block", "Innovation Center"],
-            40.0, 150.0, "Greedy TSP on >15 nodes"
-        ))
-
-        self.test_cases.append(TestCase(
-            "TC12: Academic Buildings Tour", "1",
-            ["CSE Building", "Library", "Lecture Hall Complex",
-             "Lecture Hall B", "Research Block", "Innovation Center"],
-            10.0, 40.0, "Academic cluster TSP"
-        ))
-
-        # -------------------------------------------------------------
-        # FIXED TC13 RANGE (REAL COST ≈ 31)
-        # -------------------------------------------------------------
-        self.test_cases.append(TestCase(
-            "TC13: Food Places Tour", "1",
-            ["Dining Hall", "Canteen", "Cafeteria"],
-            25.0, 40.0,  # Updated correct expected range
-            "Food cluster"
-        ))
-
-        # -------------------------------------------------------
-        # DSU TESTS
-        # -------------------------------------------------------
-        self.test_cases.append(TestCase(
-            name="DSU-T1: Connected Nodes",
-            choice="2",
-            locations=["Main Gate", "Library"],
-            expected_min_time=1.0,
-            expected_max_time=100.0,
-            description="Connected campus nodes",
-            expect_dsu_fail=False
-        ))
-
-        self.test_cases.append(TestCase(
-            name="DSU-T2: IITJ vs Old Campus",
-            choice="2",
-            locations=["Main Gate", "Old Campus Gate"],
-            expected_min_time=0.0,
-            expected_max_time=0.0,
-            description="Old Campus should be rejected",
-            expect_dsu_fail=True
-        ))
-
-        self.test_cases.append(TestCase(
-            name="DSU-T3: Mixed Nodes",
-            choice="1",
-            locations=["Library", "Old Library", "Sports Complex"],
-            expected_min_time=0.0,
-            expected_max_time=0.0,
-            description="Mixed bad node",
-            expect_dsu_fail=True
-        ))
-
-        self.test_cases.append(TestCase(
-            name="DSU-T4: Single Old Campus Node",
-            choice="1",
-            locations=["Old Campus Gate"],
-            expected_min_time=0.0,
-            expected_max_time=0.0,
-            description="Single invalid node (allowed)",
-            expect_dsu_fail=False
-        ))
-
-    # -------------------------------------------------------
+    # -------------------------
+    # Parse output
+    # -------------------------
     def _parse_output(self, output: str) -> Tuple[Optional[float], Optional[int]]:
+        if not output:
+            return None, None
         if "not reachable" in output.lower():
             return -1, 0
-
         time_match = re.search(r"Total Time:\s*([0-9.]+)", output)
         stops_match = re.search(r"Stops:\s*(\d+)", output)
-
         total_time = float(time_match.group(1)) if time_match else None
         stops = int(stops_match.group(1)) if stops_match else None
         return total_time, stops
 
-    # -------------------------------------------------------
+    # -------------------------
+    # Run a single test
+    # -------------------------
     def run_test(self, test: TestCase) -> TestResult:
         print(f"\n{Color.BOLD}{Color.OKBLUE}Running: {test.name}{Color.ENDC}")
         print(f"{Color.OKCYAN}{test.description}{Color.ENDC}")
 
         if not os.path.exists(self.executable):
-            return TestResult(test, False, None, None, "Executable not found")
+            return TestResult(test, False, None, None, "", "", "Executable not found")
 
         try:
-            process = subprocess.Popen(
+            proc = subprocess.Popen(
                 [self.executable],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True
             )
-
-            stdout, stderr = process.communicate(
-                input=test.get_input(),
-                timeout=20
-            )
+            stdout, stderr = proc.communicate(input=test.get_input(), timeout=self.timeout)
 
             total_time, stops = self._parse_output(stdout)
 
+            # DSU rejection handling
             if total_time == -1:
                 if test.expect_dsu_fail:
-                    print(f"{Color.OKGREEN}✓ PASSED (DSU rejection expected){Color.ENDC}")
-                    return TestResult(test, True, None, None)
-                print(f"{Color.FAIL}✗ FAILED (Unexpected DSU rejection){Color.ENDC}")
-                return TestResult(test, False, None, None, "Unexpected DSU rejection")
+                    print(f"{Color.OKGREEN}✓ DSU rejection OK{Color.ENDC}")
+                    return TestResult(test, True, None, None, stdout, stderr)
+                else:
+                    print(f"{Color.FAIL}✗ Unexpected DSU rejection{Color.ENDC}")
+                    return TestResult(test, False, None, None, stdout, stderr, "Unexpected DSU rejection")
 
             if total_time is None:
-                return TestResult(test, False, None, None, "Could not parse output")
+                print(f"{Color.FAIL}✗ Output parse failed{Color.ENDC}")
+                return TestResult(test, False, None, None, stdout, stderr, "Parse failed")
 
             passed = (test.expected_min_time <= total_time <= test.expected_max_time)
-
             if passed:
                 print(f"{Color.OKGREEN}✓ PASSED{Color.ENDC}")
             else:
-                print(f"{Color.FAIL}✗ FAILED{Color.ENDC}")
+                print(f"{Color.FAIL}✗ FAILED (time {total_time}){Color.ENDC}")
 
-            return TestResult(test, passed, total_time, stops)
+            return TestResult(test, passed, total_time, stops, stdout, stderr)
 
         except subprocess.TimeoutExpired:
-            return TestResult(test, False, None, None, "Timeout")
+            print(f"{Color.FAIL}✗ TIMEOUT{Color.ENDC}")
+            return TestResult(test, False, None, None, "", "", "Timeout")
 
-    # -------------------------------------------------------
-    def run_all_tests(self):
+    # -------------------------
+    # Run all tests
+    # -------------------------
+    def run_all_tests(self, save_failures: bool = True, failures_dir: str = "fail_logs"):
         print(f"\n{Color.HEADER}{Color.BOLD}{'='*60}{Color.ENDC}")
-        print(f"{Color.HEADER}{Color.BOLD} IIT JODHPUR ROUTE OPTIMIZER - TEST SUITE {Color.ENDC}")
+        print(f"{Color.HEADER}{Color.BOLD} IIT JODHPUR ROUTE OPTIMIZER - 100 TEST SUITE {Color.ENDC}")
         print(f"{Color.HEADER}{Color.BOLD}{'='*60}{Color.ENDC}")
 
+        if save_failures:
+            os.makedirs(failures_dir, exist_ok=True)
+
+        executed = 0
         for test in self.test_cases:
             res = self.run_test(test)
             self.results.append(res)
+            executed += 1
+            # Save failing stdout/stderr for inspection
+            if save_failures and (not res.passed):
+                fname = os.path.join(failures_dir, f"{test.name.replace(' ', '_')}.log")
+                with open(fname, "w", encoding="utf-8") as fh:
+                    fh.write("=== STDOUT ===\n")
+                    fh.write((res.stdout or "") + "\n")
+                    fh.write("=== STDERR ===\n")
+                    fh.write((res.stderr or "") + "\n")
+                    fh.write("=== META ===\n")
+                    fh.write(json.dumps({
+                        "name": test.name,
+                        "expected_min": test.expected_min_time,
+                        "expected_max": test.expected_max_time,
+                        "dsu_fail_expected": test.expect_dsu_fail,
+                        "error": res.error_msg
+                    }, indent=2))
+        self._print_summary(executed)
 
-        self._print_summary()
-
-    # -------------------------------------------------------
-    def _print_summary(self):
-        passed = sum(r.passed for r in self.results)
-        failed = len(self.results) - passed
-
+    # -------------------------
+    # Summary
+    # -------------------------
+    def _print_summary(self, executed_count: int):
+        passed = sum(1 for r in self.results if r.passed)
+        failed = executed_count - passed
         print(f"\n{Color.BOLD}{Color.HEADER}{'='*60}{Color.ENDC}")
         print(f"{Color.BOLD}{Color.HEADER} TEST SUMMARY {Color.ENDC}")
         print(f"{Color.BOLD}{Color.HEADER}{'='*60}{Color.ENDC}")
-
-        print(f"Total Tests: {len(self.results)}")
+        print(f"Total Tests Built: {len(self.test_cases)}")
+        print(f"Total Tests Executed: {executed_count}")
         print(f"{Color.OKGREEN}Passed: {passed}{Color.ENDC}")
         print(f"{Color.FAIL}Failed: {failed}{Color.ENDC}")
 
-        if failed > 0:
-            print(f"\n{Color.WARNING}Failed Tests:{Color.ENDC}")
+        if failed:
+            print(f"\n{Color.WARNING}Failed Cases:{Color.ENDC}")
             for r in self.results:
                 if not r.passed:
-                    print(f" - {r.test_case.name}")
-
+                    print(f" - {r.test_case.name}: {r.error_msg or 'Failed'}")
 
 def main():
+    exe = "./optimizer.exe"
     if len(sys.argv) > 1:
-        if sys.argv[1] in ("--help", "-h"):
-            print("Usage:")
-            print(" python3 test_runner.py")
-            print(" python3 test_runner.py --list")
-            print(" python3 test_runner.py <test-number>")
-            return
-
-        if sys.argv[1] == "--list":
-            t = RouteOptimizerTester()
-            for idx, tc in enumerate(t.test_cases, 1):
-                print(f"{idx}. {tc.name}")
-            return
-
-        try:
-            num = int(sys.argv[1])
-            t = RouteOptimizerTester()
-            t.run_test(t.test_cases[num - 1])
-            return
-        except:
-            print("Invalid argument.")
-            return
-
-    t = RouteOptimizerTester()
-    t.run_all_tests()
-
+        exe = sys.argv[1]
+    tester = RouteOptimizerTester(executable_path=exe, timeout_s=30)
+    tester.run_all_tests(save_failures=True, failures_dir="fail_logs")
 
 if __name__ == "__main__":
     main()

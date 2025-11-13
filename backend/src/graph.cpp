@@ -1,19 +1,24 @@
 #include "../include/graph.h"
 #include <cmath>
-#include <algorithm>
+#include <limits>
+#include <fstream>
+#include <sstream>
+#include <iostream>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-Graph::Graph():numVertices(0) {}
+Graph::Graph() : numVertices(0) {}
 void Graph::addAttraction(const Attraction& attr) {
     attractions[attr.id]=attr;
+    nameToId[attr.name]=attr.id;
     if (adjList.find(attr.id)==adjList.end()) {
         adjList[attr.id]=std::vector<std::pair<int,double>>();
         numVertices++;
     }
 }
-void Graph::addEdge(int from,int to,double distance) {
-    adjList[from].push_back(std::make_pair(to,distance));
+void Graph::addEdge(int from,int to,double weight) {
+    adjList[from].push_back(std::make_pair(to,weight));
+    adjList[to].push_back(std::make_pair(from,weight));
 }
 std::vector<std::pair<int,double>> Graph::getNeighbors(int nodeId) const {
     auto it=adjList.find(nodeId);
@@ -48,29 +53,68 @@ std::vector<int> Graph::getAllAttractionIds() const {
 bool Graph::hasAttraction(int id) const {
     return attractions.find(id)!=attractions.end();
 }
-double haversineDistance(double lat1,double lon1,double lat2,double lon2) {
-    const double R=6371.0;
-    double dLat=(lat2-lat1)*M_PI/180.0;
-    double dLon=(lon2-lon1)*M_PI/180.0;
-    lat1=lat1*M_PI/180.0;
-    lat2=lat2*M_PI/180.0;
-    double a=sin(dLat/2.0)*sin(dLat/2.0)+cos(lat1)*cos(lat2)*sin(dLon/2.0)*sin(dLon/2.0);
-    double c=2.0*atan2(sqrt(a),sqrt(1.0-a));
-    return R*c;
+int Graph::getIdByName(const std::string& name) const {
+    auto it=nameToId.find(name);
+    if (it!=nameToId.end()) {
+        return it->second;
+    }
+    return -1;
 }
-void Graph::buildCompleteGraph() {
-    std::vector<int> ids=getAllAttractionIds();
-    for (size_t i=0; i<ids.size(); i++) {
-        for (size_t j=0; j<ids.size(); j++) {
-            if (ids[i]!=ids[j]) {
-                Attraction attr1=attractions[ids[i]];
-                Attraction attr2=attractions[ids[j]];
-                double dist=haversineDistance(
-                    attr1.latitude,attr1.longitude,
-                    attr2.latitude,attr2.longitude
-                );
-                addEdge(ids[i],ids[j],dist);
-            }
+void Graph::loadFromCSV(const std::string& attractionsFile,const std::string& roadsFile) {
+    std::ifstream attFile(attractionsFile);
+    if (!attFile.is_open()) {
+        std::cerr << "Error: Cannot open " << attractionsFile << std::endl;
+        return;
+    }
+    std::string line;
+    std::getline(attFile,line);
+    int id=0;
+    while (std::getline(attFile,line)) {
+        if (line.empty()) continue;
+        std::stringstream ss(line);
+        std::string name,category;
+        double rating,duration,fee,lat,lon;
+        int pop;
+        std::getline(ss,name,',');
+        std::getline(ss,category,',');
+        ss >> rating; ss.ignore();
+        ss >> duration; ss.ignore();
+        ss >> fee; ss.ignore();
+        ss >> pop; ss.ignore();
+        ss >> lat; ss.ignore();
+        ss >> lon;
+        Attraction attr(id,name,category,lat,lon,duration,rating,fee,pop);
+        addAttraction(attr);
+        id++;
+    }
+    attFile.close();
+    std::cout << "Loaded " << id << " attractions." << std::endl;
+    std::ifstream roadsFileStream(roadsFile);
+    if (!roadsFileStream.is_open()) {
+        std::cerr << "Error: Cannot open " << roadsFile << std::endl;
+        return;
+    }
+    std::getline(roadsFileStream,line);
+    int edgeCount=0;
+    while (std::getline(roadsFileStream,line)) {
+        if (line.empty()) continue;
+        std::stringstream ss(line);
+        std::string from,to;
+        double time;
+        std::getline(ss,from,',');
+        std::getline(ss,to,',');
+        ss >> time;
+        if (!from.empty() && from[from.length()-1]=='\r') 
+            from=from.substr(0,from.length()-1);
+        if (!to.empty() && to[to.length()-1]=='\r') 
+            to=to.substr(0,to.length()-1);
+        int fromId=getIdByName(from);
+        int toId=getIdByName(to);
+        if (fromId!=-1 && toId!=-1) {
+            addEdge(fromId,toId,time);
+            edgeCount++;
         }
     }
+    roadsFileStream.close();
+    std::cout << "Loaded " << edgeCount << " roads." << std::endl;
 }

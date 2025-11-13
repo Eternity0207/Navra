@@ -23,8 +23,15 @@ struct Edge{
     bool operator<(const Edge& other) const;
 };
 
-std::vector<Edge> kruskalMST(std::vector<Edge>& edges,int n);
-std::vector<int> mstToTour(const std::vector<Edge>& mst,int n,int start);
+std::vector<Edge> kruskalMST(std::vector<Edge>& edges, int n);
+std::vector<int> mstToTour(const std::vector<Edge>& mst, int n, int start);
+
+// Route computation for ordered list
+std::pair<double, std::vector<int>> computeOrderedRoute(const Graph& g, const std::vector<int>& orderedList);
+
+// Smart algorithm selector
+std::pair<double, std::vector<int>> computeOptimalRoute(const Graph& g, const std::vector<int>& locations, bool flexibleOrder);
 
 #endif
+
 

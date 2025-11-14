@@ -29,7 +29,7 @@ app.post("/api/route", (req, res) => {
     }
 
     const child = spawn(exePath, [], {
-        cwd: path.join(__dirname, "..", "backend"),
+        cwd: __dirname,
         stdio: ['pipe', 'pipe', 'pipe']
     });
 

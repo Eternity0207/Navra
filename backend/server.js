@@ -5,63 +5,145 @@ const path = require("path");
 
 const app = express();
 
-// Allow frontend (React) to access backend
 app.use(cors());
-
-// Parse JSON bodies from frontend
 app.use(express.json());
 
-// Simple health-check
 app.get("/", (req, res) => {
     res.send("Backend is running!");
 });
 
-// MAIN ROUTE - call C++ optimizer
 app.post("/api/route", (req, res) => {
+    console.log("=== Received Request ===");
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
 
-    // Path to your C++ executable
     const exePath = path.join(__dirname, "optimizer.exe");
+    console.log("Executable path:", exePath);
 
-    // Spawn the C++ program
-    const child = spawn(exePath);
+    const fs = require('fs');
+    if (!fs.existsSync(exePath)) {
+        console.error("ERROR: optimizer.exe not found at", exePath);
+        return res.status(500).json({
+            success: false,
+            error: "C++ optimizer executable not found"
+        });
+    }
 
-    // Send JSON input to C++ (stdin)
-    child.stdin.write(JSON.stringify(req.body));
-    child.stdin.end();
+    const child = spawn(exePath, [], {
+        stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    // Track if response was sent
+    let responseSent = false;
+
+    child.on('error', (err) => {
+        console.error("ERROR: Failed to spawn process:", err);
+        if (!responseSent) {
+            responseSent = true;
+            clearTimeout(timeoutId);
+            return res.status(500).json({
+                success: false,
+                error: `Failed to start optimizer: ${err.message}`
+            });
+        }
+    });
+
+    const inputData = JSON.stringify(req.body);
+    console.log("Sending to C++:", inputData);
+
+    try {
+        child.stdin.write(inputData);
+        child.stdin.end();
+    } catch (err) {
+        console.error("ERROR: Failed to write to stdin:", err);
+        if (!responseSent) {
+            responseSent = true;
+            clearTimeout(timeoutId);
+            return res.status(500).json({
+                success: false,
+                error: `Failed to send data to optimizer: ${err.message}`
+            });
+        }
+    }
 
     let output = "";
     let errorOutput = "";
 
-    // Collect stdout from C++
     child.stdout.on("data", (data) => {
-        output += data.toString();
+        const chunk = data.toString();
+        console.log("C++ stdout:", chunk);
+        output += chunk;
     });
 
-    // Collect errors
     child.stderr.on("data", (data) => {
-        errorOutput += data.toString();
+        const chunk = data.toString();
+        console.error("C++ stderr:", chunk);
+        errorOutput += chunk;
     });
 
-    // On finish
     child.on("close", (code) => {
-        if (errorOutput.length > 0) {
-            return res.status(500).send({ error: errorOutput });
+        console.log("=== C++ Process Closed ===");
+        console.log("Exit code:", code);
+        console.log("Full stdout:", output);
+        console.log("Full stderr:", errorOutput);
+
+        // Clear timeout
+        clearTimeout(timeoutId);
+
+        // Don't send response if already sent
+        if (responseSent) {
+            console.log("Response already sent, skipping");
+            return;
+        }
+        responseSent = true;
+
+        // Check for output even if exit code is non-zero
+        if (!output.trim()) {
+            return res.status(500).json({
+                success: false,
+                error: `C++ program produced no output (exit code: ${code})`,
+                details: errorOutput
+            });
         }
 
         try {
             const jsonData = JSON.parse(output);
-            res.send(jsonData);
+            console.log("=== Parsed JSON ===");
+            console.log(jsonData);
+            
+            // Validate response structure
+            if (!jsonData.routeNames || !Array.isArray(jsonData.routeNames)) {
+                throw new Error("Invalid response: missing routeNames array");
+            }
+            
+            // Send success response
+            res.json(jsonData);
+            
         } catch (err) {
-            res.status(500).send({
-                error: "Invalid JSON from C++",
-                raw: output
+            console.error("ERROR: Failed to parse JSON:", err.message);
+            return res.status(500).json({
+                success: false,
+                error: "Invalid JSON from C++ program",
+                details: err.message,
+                raw: output.substring(0, 500)
             });
         }
     });
+
+    // Timeout after 30 seconds
+    const timeoutId = setTimeout(() => {
+        if (!responseSent && !child.killed) {
+            console.error("ERROR: Timeout - killing C++ process");
+            responseSent = true;
+            child.kill();
+            res.status(500).json({
+                success: false,
+                error: "C++ program timeout (>30s)"
+            });
+        }
+    }, 30000);
 });
 
-// Start the backend server
 const PORT = 5000;
 app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
+    console.log(`Backend running on http://localhost:5000`);
 });

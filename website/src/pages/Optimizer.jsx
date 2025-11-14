@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Play, RotateCcw, MapPin } from 'lucide-react';
+import GraphVisualization from '../components/GraphVisualization';
 import '../styles/optimizer.css';
 
 const Optimizer = () => {
@@ -10,6 +11,29 @@ const Optimizer = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+
+  // Edges data for graph
+  const edges = [
+    'Main Gate,Admin Block,4',
+    'Admin Block,Library,3',
+    'Library,CSE Building,2',
+    'CSE Building,Dining Hall,3',
+    'Dining Hall,Hostel A,3',
+    'Hostel A,Main Gate,5',
+    'Parking Lot,Admin Block,2',
+    'Sports Complex,Parking Lot,3',
+    'Sports Complex,Student Activity Center,4',
+    'Student Activity Center,Workshop,3',
+    'Workshop,Medical Center,2',
+    'Medical Center,Library,3',
+    'Research Block,CSE Building,4',
+    'Research Block,Workshop,5',
+    'Innovation Lab,Startup Incubator,3',
+    'Startup Incubator,Robotics Bay,4',
+    'Robotics Bay,Testing Ground,2',
+    'Testing Ground,Control Tower,3',
+    'Control Tower,Innovation Lab,4',
+  ];
 
   const locations = [
     'Main Gate', 'Admin Block', 'Library', 'CSE Building', 'Dining Hall',
@@ -24,7 +48,7 @@ const Optimizer = () => {
 
   const handleToggle = (location) => {
     if (routeMode === 3) return;
-    
+
     setSelectedLocations(prev =>
       prev.includes(location)
         ? prev.filter(l => l !== location)
@@ -178,50 +202,61 @@ const Optimizer = () => {
           )}
 
           {result && !loading && (
-            <div className="result-display">
-              <div className="result-header">
-                <h3>✓ Route Computed</h3>
-                <p>Optimal path calculated successfully</p>
+            <div className="result-with-graph">
+              <div className="graph-container">
+                <GraphVisualization routePath={result.routeNames} edges={edges} />
               </div>
 
-              <div className="result-stats">
-                <div className="stat">
-                  <span className="stat-label">Time</span>
-                  <span className="stat-value">{formatTime(result.totalTime)}</span>
+              <div className="result-info-panel">
+                <div className="result-header">
+                  <h3>✓ Route Computed</h3>
+                  <p>Optimal path calculated successfully</p>
                 </div>
-                <div className="stat">
-                  <span className="stat-label">Stops</span>
-                  <span className="stat-value">{result.stopCount}</span>
-                </div>
-                <div className="stat">
-                  <span className="stat-label">Algorithm</span>
-                  <span className="stat-value">{result.algorithm}</span>
-                </div>
-              </div>
 
-              <div className="route-path">
-                <h4>Route Path</h4>
-                {result.routeNames.map((name, idx) => (
-                  <div key={idx} className="path-step">
-                    <div className="step-number">{idx + 1}</div>
-                    <div className="step-name">{name}</div>
-                    {idx === 0 && <span className="step-tag start">Start</span>}
-                    {idx === result.routeNames.length - 1 && <span className="step-tag end">End</span>}
+                <div className="result-stats">
+                  <div className="stat">
+                    <span className="stat-label">Time</span>
+                    <span className="stat-value">{formatTime(result.totalTime)}</span>
                   </div>
-                ))}
+                  <div className="stat">
+                    <span className="stat-label">Stops</span>
+                    <span className="stat-value">{result.stopCount}</span>
+                  </div>
+                  <div className="stat">
+                    <span className="stat-label">Algorithm</span>
+                    <span className="stat-value">{result.algorithm}</span>
+                  </div>
+                </div>
+
+                <div className="route-path">
+                  <h4>Route Path</h4>
+                  <div className="path-steps">
+                    {result.routeNames.map((name, idx) => (
+                      <div key={idx} className="path-step">
+                        <div className="step-number">{idx + 1}</div>
+                        <div className="step-name">{name}</div>
+                        {idx === 0 && <span className="step-tag start">Start</span>}
+                        {idx === result.routeNames.length - 1 && <span className="step-tag end">End</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {!loading && !error && !result && (
-            <div className="status-box">
-              <MapPin size={64} strokeWidth={1} />
-              <h3>{routeMode === 3 ? 'Full Campus Mode' : 'Select Locations'}</h3>
-              <p>
-                {routeMode === 3
-                  ? 'Click Compute to traverse entire campus'
-                  : 'Choose locations and click Compute to find optimal route'}
-              </p>
+            <div className="empty-state">
+              <GraphVisualization routePath={[]} edges={edges} />
+              <div className="empty-overlay">
+                <MapPin size={64} strokeWidth={1} />
+                <h3>{routeMode === 3 ? 'Full Campus Mode' : 'Select Locations'}</h3>
+                <p>
+                  {routeMode === 3
+                    ? 'Click Compute to traverse entire campus'
+                    : 'Choose locations and click Compute to find optimal route'}
+                </p>
+              </div>
             </div>
           )}
         </div>

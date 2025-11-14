@@ -1,96 +1,85 @@
 #include "../include/algorithms.h"
+#include "../include/graph.h"
+#include <algorithm>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
-#include <algorithm>
 #include <cmath>
-#include <limits>
-using namespace std;
+#include <vector>
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
+using namespace std;
+
 double haversine(double lat1, double lon1, double lat2, double lon2) {
-    const double R = 6371.0;
-    double dLat = (lat2 - lat1)*M_PI/180.0;
-    double dLon = (lon2 - lon1)*M_PI/180.0;
-    lat1 = lat1*M_PI/180.0;
-    lat2 = lat2*M_PI/180.0;
-    double a = sin(dLat/2.0)*sin(dLat/2.0) +
-               cos(lat1)*cos(lat2)*sin(dLon/2.0)*sin(dLon/2.0);
-    double c = 2.0*atan2(sqrt(a), sqrt(1.0 - a));
-    return R*c*1000; // Convert to meters, then scale for time approximation
+    const double R = 6371.0; // km
+    double dLat = (lat2 - lat1) * M_PI / 180.0;
+    double dLon = (lon2 - lon1) * M_PI / 180.0;
+    lat1 = lat1 * M_PI / 180.0;
+    lat2 = lat2 * M_PI / 180.0;
+    double a = sin(dLat/2.0)*sin(dLat/2.0) + cos(lat1)*cos(lat2)*sin(dLon/2.0)*sin(dLon/2.0);
+    double c = 2.0 * atan2(sqrt(a), sqrt(1.0 - a));
+    return R * c * 1000.0; // meters
 }
 
-struct AStarNode {
-    int id;
-    double fScore;
-    bool operator>(const AStarNode& other) const {
-        return fScore > other.fScore;
-    }
-};
+struct AStarNode { int id; double f; };
+struct AStarCompare { bool operator()(const AStarNode& a, const AStarNode& b) const { return a.f > b.f; } };
 
 vector<int> aStarPath(const Graph& g, int start, int goal) {
-    priority_queue<AStarNode, vector<AStarNode>, greater<AStarNode>> pq;
-    unordered_map<int, double> gScore;
-    unordered_map<int, double> fScore;
+    // Basic A* — returns empty vector if heuristic or nodes not present or no path
+    if (!g.isValidAttraction(start) || !g.isValidAttraction(goal)) return {};
+    Attraction sa = g.getAttraction(start);
+    Attraction ga = g.getAttraction(goal);
+    if (sa.latitude == 0 && sa.longitude == 0) return {};
+    if (ga.latitude == 0 && ga.longitude == 0) return {};
+
+    unordered_map<int, double> gscore;
+    unordered_map<int, double> fscore;
     unordered_map<int, int> cameFrom;
-    unordered_set<int> closedSet;
+    unordered_set<int> closed;
 
-    Attraction startAttr = g.getAttraction(start);
-    Attraction goalAttr = g.getAttraction(goal);
+    auto heuristic = [&](int node) {
+        Attraction a = g.getAttraction(node);
+        return haversine(a.latitude, a.longitude, ga.latitude, ga.longitude)/1000.0;
+    };
 
-    // Check if coordinates are valid
-    if (startAttr.latitude == 0 || goalAttr.latitude == 0) {
-        return vector<int>(); // Return empty, fallback to Dijkstra
-    }
-
-    gScore[start] = 0;
-    double h = haversine(startAttr.latitude, startAttr.longitude,
-                        goalAttr.latitude, goalAttr.longitude)/1000.0; // Heuristic
-    fScore[start] = h;
-    pq.push({start, fScore[start]});
+    priority_queue<AStarNode, vector<AStarNode>, AStarCompare> pq;
+    gscore[start] = 0.0;
+    fscore[start] = heuristic(start);
+    pq.push({start, fscore[start]});
 
     while (!pq.empty()) {
-        int current = pq.top().id;
-        pq.pop();
-
-        if (current == goal) {
-            // Reconstruct path
+        AStarNode cur = pq.top(); pq.pop();
+        int u = cur.id;
+        if (u == goal) {
             vector<int> path;
-            while (cameFrom.find(current) != cameFrom.end()) {
-                path.push_back(current);
-                current = cameFrom[current];
+            int x = goal;
+            while (cameFrom.find(x) != cameFrom.end()) {
+                path.push_back(x);
+                x = cameFrom[x];
             }
             path.push_back(start);
             reverse(path.begin(), path.end());
             return path;
         }
+        if (closed.count(u)) continue;
+        closed.insert(u);
 
-        if (closedSet.find(current) != closedSet.end()) continue;
-        closedSet.insert(current);
-
-        auto neighbors = g.getNeighbors(current);
-        for (size_t i = 0; i < neighbors.size(); i++) {
-            int neighbor = neighbors[i].first;
-            double weight = neighbors[i].second;
-            
-            if (closedSet.find(neighbor) != closedSet.end()) continue;
-
-            double tentativeGScore = gScore[current] + weight;
-
-            if (gScore.find(neighbor) == gScore.end() || tentativeGScore < gScore[neighbor]) {
-                cameFrom[neighbor] = current;
-                gScore[neighbor] = tentativeGScore;
-                
-                Attraction neighborAttr = g.getAttraction(neighbor);
-                h = haversine(neighborAttr.latitude, neighborAttr.longitude,
-                            goalAttr.latitude, goalAttr.longitude)/1000.0;
-                fScore[neighbor] = gScore[neighbor] + h;
-                pq.push({neighbor, fScore[neighbor]});
+        auto nbrs = g.getNeighbors(u);
+        for (size_t i = 0; i < nbrs.size(); ++i) {
+            int v = nbrs[i].first;
+            double w = nbrs[i].second;
+            if (closed.count(v)) continue;
+            double tentative = gscore[u] + w;
+            if (gscore.find(v) == gscore.end() || tentative < gscore[v]) {
+                cameFrom[v] = u;
+                gscore[v] = tentative;
+                fscore[v] = tentative + heuristic(v);
+                pq.push({v, fscore[v]});
             }
         }
     }
-
-    return vector<int>(); // No path found
+    return {};
 }

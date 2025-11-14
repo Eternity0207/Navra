@@ -1,21 +1,19 @@
 name,category,rating,duration,fee,popularity,latitude,longitude
-Main Gate,Landmark,4.5,0.1,0,95,26.4700,73.1135
-Academic Block 1,Academic,4.0,0.5,0,80,26.4705,73.1140
-Academic Block 2,Academic,4.0,0.5,0,75,26.4708,73.1145
-Central Library,Academic,4.5,1.0,0,90,26.4710,73.1150
-Hostel Complex A,Residential,3.5,0.3,0,70,26.4695,73.1125
-Hostel Complex B,Residential,3.5,0.3,0,68,26.4692,73.1130
-Sports Complex,Recreation,4.2,1.5,0,85,26.4688,73.1155
-Gymnasium,Recreation,4.0,1.0,0,78,26.4686,73.1158
-Student Activity Center,Recreation,4.3,1.0,0,82,26.4684,73.1162
-Cafeteria 1,Food,4.5,0.5,50,88,26.4698,73.1148
-Cafeteria 2,Food,4.5,0.5,50,86,26.4696,73.1152
-Mess Hall,Food,4.0,0.5,30,84,26.4694,73.1156
-Medical Center,Service,4.2,0.5,0,75,26.4702,73.1138
-Auditorium,Event,4.4,2.0,0,80,26.4712,73.1148
-Lecture Hall Complex,Academic,4.1,1.0,0,82,26.4715,73.1155
-Research Park,Academic,4.3,1.5,0,77,26.4720,73.1165
-Central Plaza,Landmark,4.6,0.5,0,92,26.4703,73.1142
-Administrative Block,Service,3.8,0.5,0,65,26.4704,73.1145
-Innovation Hub,Academic,4.4,1.5,0,79,26.4714,73.1160
-Garden Area,Recreation,4.0,1.0,0,72,26.4690,73.1145
+Main Gate,Entry,4.5,5,0,1000,26.2621,73.0281
+Admin Block,Administration,4.3,20,0,700,26.2623,73.0289
+Library,Academic,4.8,45,0,850,26.2624,73.0284
+CSE Building,Academic,4.7,30,0,900,26.2623,73.0287
+Dining Hall,Food,4.0,25,50,700,26.2622,73.0279
+Hostel A,Residence,4.1,20,0,650,26.2620,73.0283
+Sports Complex,Sports,4.4,60,0,750,26.2630,73.0290
+Student Activity Center,Activity,4.6,35,0,760,26.2632,73.0291
+Research Block,Academic,4.7,50,0,880,26.2626,73.0283
+Workshop,Utility,4.0,45,0,580,26.2628,73.0289
+Medical Center,Health,4.3,25,0,680,26.2628,73.0285
+Parking Lot,Utility,3.8,5,0,400,26.2629,73.0288
+Innovation Lab,Tech,4.9,40,0,930,26.2642,73.0301
+Startup Incubator,Tech,4.8,60,0,920,26.2645,73.0304
+Robotics Bay,Tech,4.7,55,0,910,26.2641,73.0307
+Testing Ground,Tech,4.6,50,0,890,26.2643,73.0310
+Control Tower,Tech,4.4,35,0,850,26.2644,73.0309
+Lost Hut,Mystery,3.0,10,0,50,26.2610,73.0320

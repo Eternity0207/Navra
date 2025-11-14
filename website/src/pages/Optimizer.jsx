@@ -1,46 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Play, RotateCcw, MapPin } from 'lucide-react';
+import { Play, RotateCcw, MapPin, ArrowRight } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import GraphVisualization from '../components/GraphVisualization';
 import '../styles/optimizer.css';
 
 const Optimizer = () => {
+  const { isDark } = useTheme();
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [routeMode, setRouteMode] = useState(1);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [graphData, setGraphData] = useState(null);
+  const [locations, setLocations] = useState([]);
 
-  // Edges data for graph
-  const edges = [
-    'Main Gate,Admin Block,4',
-    'Admin Block,Library,3',
-    'Library,CSE Building,2',
-    'CSE Building,Dining Hall,3',
-    'Dining Hall,Hostel A,3',
-    'Hostel A,Main Gate,5',
-    'Parking Lot,Admin Block,2',
-    'Sports Complex,Parking Lot,3',
-    'Sports Complex,Student Activity Center,4',
-    'Student Activity Center,Workshop,3',
-    'Workshop,Medical Center,2',
-    'Medical Center,Library,3',
-    'Research Block,CSE Building,4',
-    'Research Block,Workshop,5',
-    'Innovation Lab,Startup Incubator,3',
-    'Startup Incubator,Robotics Bay,4',
-    'Robotics Bay,Testing Ground,2',
-    'Testing Ground,Control Tower,3',
-    'Control Tower,Innovation Lab,4',
-  ];
+  // Load CSV data on component mount
+  useEffect(() => {
+    const loadCSVData = async () => {
+      try {
+        const attractionsResponse = await fetch('/src/assets/attractions.csv');
+        const attractionsText = await attractionsResponse.text();
+        
+        const roadsResponse = await fetch('/src/assets/roads.csv');
+        const roadsText = await roadsResponse.text();
 
-  const locations = [
-    'Main Gate', 'Admin Block', 'Library', 'CSE Building', 'Dining Hall',
-    'Hostel A', 'Sports Complex', 'Student Activity Center', 'Research Block',
-    'Workshop', 'Medical Center', 'Parking Lot', 'Innovation Lab',
-    'Startup Incubator', 'Robotics Bay', 'Testing Ground', 'Control Tower', 'Lost Hut'
-  ].sort();
+        const attractionLines = attractionsText.trim().split('\n');
+        const attractionData = attractionLines.slice(1)
+          .map(line => {
+            const [name, category, rating, duration, fee, popularity, latitude, longitude] = 
+              line.split(',').map(item => item.trim());
+            return {
+              name,
+              category,
+              rating: parseFloat(rating),
+              duration: parseInt(duration),
+              fee: parseInt(fee),
+              popularity: parseInt(popularity),
+              latitude: parseFloat(latitude),
+              longitude: parseFloat(longitude)
+            };
+          });
+
+        const roadLines = roadsText.trim().split('\n');
+        const roadData = roadLines.slice(1)
+          .filter(line => !line.startsWith('#') && line.trim())
+          .map(line => {
+            const [from, to, time] = line.split(',').map(item => item.trim());
+            return { from, to, time: parseInt(time) };
+          });
+
+        const nodeSet = new Set();
+        const links = roadData.map(road => {
+          nodeSet.add(road.from);
+          nodeSet.add(road.to);
+          return {
+            source: road.from,
+            target: road.to,
+            value: road.time
+          };
+        });
+
+        const bidirectionalLinks = [...links];
+        links.forEach(link => {
+          bidirectionalLinks.push({
+            source: link.target,
+            target: link.source,
+            value: link.value
+          });
+        });
+
+        const nodes = Array.from(nodeSet).map(name => {
+          const attraction = attractionData.find(a => a.name === name);
+          return {
+            id: name,
+            name: name,
+            val: 12,
+            ...attraction
+          };
+        });
+
+        setGraphData({ nodes, links: bidirectionalLinks });
+        setLocations(attractionData.map(a => a.name).sort());
+      } catch (err) {
+        console.error('Error loading CSV data:', err);
+        setError('Failed to load graph data from CSV files');
+      }
+    };
+
+    loadCSVData();
+  }, []);
 
   const filteredLocations = locations.filter(loc =>
     loc.toLowerCase().includes(search.toLowerCase())
@@ -98,8 +148,16 @@ const Optimizer = () => {
     return `${h}h ${m}m`;
   };
 
+  const isRequestedStop = (name) => {
+    return result?.routeNames && result.routeNames.includes(name);
+  };
+
+  const pathToDisplay = result?.fullPathNames && result.fullPathNames.length > 0 
+    ? result.fullPathNames 
+    : result?.routeNames || [];
+
   return (
-    <div className="optimizer-page">
+    <div className={`optimizer-page ${isDark ? 'dark' : 'light'}`}>
       <div className="optimizer-container">
         {/* Sidebar */}
         <div className="sidebar">
@@ -113,18 +171,21 @@ const Optimizer = () => {
             <button
               className={`mode-btn ${routeMode === 1 ? 'active' : ''}`}
               onClick={() => setRouteMode(1)}
+              title="Flexible Order - TSP Algorithm"
             >
               Flexible
             </button>
             <button
               className={`mode-btn ${routeMode === 2 ? 'active' : ''}`}
               onClick={() => setRouteMode(2)}
+              title="Fixed Order - Dijkstra's Algorithm"
             >
               Fixed
             </button>
             <button
               className={`mode-btn ${routeMode === 3 ? 'active' : ''}`}
               onClick={() => setRouteMode(3)}
+              title="Full Campus - MST + DFS + A*"
             >
               Full
             </button>
@@ -143,24 +204,32 @@ const Optimizer = () => {
 
           {/* Locations List */}
           <div className="locations-list">
-            {filteredLocations.map((location) => {
-              const isSelected = selectedLocations.includes(location);
-              const order = selectedLocations.indexOf(location) + 1;
+            {routeMode === 3 ? (
+              <div className="full-mode-message">
+                <MapPin size={48} />
+                <h3>Full Campus Mode</h3>
+                <p>Click "Compute" to traverse all locations using MST algorithm.</p>
+              </div>
+            ) : (
+              filteredLocations.map((location) => {
+                const isSelected = selectedLocations.includes(location);
+                const order = selectedLocations.indexOf(location) + 1;
 
-              return (
-                <div
-                  key={location}
-                  className={`location-item ${isSelected ? 'selected' : ''} ${routeMode === 3 ? 'disabled' : ''}`}
-                  onClick={() => handleToggle(location)}
-                >
-                  <div className="checkbox">
-                    {isSelected && '✓'}
+                return (
+                  <div
+                    key={location}
+                    className={`location-item ${isSelected ? 'selected' : ''}`}
+                    onClick={() => handleToggle(location)}
+                  >
+                    <div className="checkbox">
+                      {isSelected && '✓'}
+                    </div>
+                    <span className="location-name">{location}</span>
+                    {isSelected && <span className="order-badge">{order}</span>}
                   </div>
-                  <span className="location-name">{location}</span>
-                  {isSelected && <span className="order-badge">{order}</span>}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {/* Actions */}
@@ -176,7 +245,7 @@ const Optimizer = () => {
             <button
               className="btn-clear"
               onClick={handleClear}
-              disabled={loading || routeMode === 3}
+              disabled={loading}
             >
               <RotateCcw size={16} />
             </button>
@@ -186,75 +255,120 @@ const Optimizer = () => {
         {/* Main Content */}
         <div className="main-area">
           {loading && (
-            <div className="status-box">
-              <div className="spinner"></div>
-              <h3>Computing Route</h3>
-              <p>Analyzing optimal path...</p>
+            <div className="status-overlay">
+              <div className="status-box">
+                <div className="spinner"></div>
+                <h3>Computing Route</h3>
+                <p>Analyzing optimal path...</p>
+              </div>
             </div>
           )}
 
           {error && !loading && (
-            <div className="status-box error-box">
-              <h3>Error</h3>
-              <p>{error}</p>
-              <button onClick={() => setError(null)}>Dismiss</button>
+            <div className="status-overlay">
+              <div className="status-box error-box">
+                <div className="error-icon">⚠️</div>
+                <h3>Error</h3>
+                <p>{error}</p>
+                <button onClick={() => setError(null)}>Dismiss</button>
+              </div>
             </div>
           )}
 
-          {result && !loading && (
-            <div className="result-with-graph">
-              <div className="graph-container">
-                <GraphVisualization routePath={result.routeNames} edges={edges} />
+          {result && !loading && !error ? (
+            <div className="result-layout">
+              {/* Graph Visualization - Better Height */}
+              <div className="graph-section">
+                <GraphVisualization 
+                  routePath={result.fullPathNames || result.routeNames} 
+                  graphData={graphData} 
+                />
               </div>
 
-              <div className="result-info-panel">
+              {/* Result Panel */}
+              <div className="result-panel">
+                {/* Stats Header */}
                 <div className="result-header">
-                  <h3>✓ Route Computed</h3>
-                  <p>Optimal path calculated successfully</p>
+                  <div className="success-badge">
+                    <span className="success-icon">✓</span>
+                    <div>
+                      <h3>Route Computed</h3>
+                      <p>{result.algorithm}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <span className="stat-label">Time</span>
+                      <span className="stat-value">{formatTime(result.totalTime)}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Stops</span>
+                      <span className="stat-value">{result.stopCount}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Total Nodes</span>
+                      <span className="stat-value">{pathToDisplay.length}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="result-stats">
-                  <div className="stat">
-                    <span className="stat-label">Time</span>
-                    <span className="stat-value">{formatTime(result.totalTime)}</span>
+                {/* Path Display */}
+                <div className="result-body">
+                  <div className="path-header">
+                    <h4>Complete Route Path</h4>
+                    <span className="path-count">{pathToDisplay.length} nodes</span>
                   </div>
-                  <div className="stat">
-                    <span className="stat-label">Stops</span>
-                    <span className="stat-value">{result.stopCount}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Algorithm</span>
-                    <span className="stat-value">{result.algorithm}</span>
-                  </div>
-                </div>
+                  
+                  <div className="path-horizontal-scroll">
+                    <div className="path-horizontal">
+                      {pathToDisplay.map((name, idx) => {
+                        const isRequested = isRequestedStop(name);
+                        const isStart = idx === 0;
+                        const isEnd = idx === pathToDisplay.length - 1;
 
-                <div className="route-path">
-                  <h4>Route Path</h4>
-                  <div className="path-steps">
-                    {result.routeNames.map((name, idx) => (
-                      <div key={idx} className="path-step">
-                        <div className="step-number">{idx + 1}</div>
-                        <div className="step-name">{name}</div>
-                        {idx === 0 && <span className="step-tag start">Start</span>}
-                        {idx === result.routeNames.length - 1 && <span className="step-tag end">End</span>}
-                      </div>
-                    ))}
+                        return (
+                          <React.Fragment key={`${idx}-${name}`}>
+                            <div className={`path-node ${isRequested ? 'requested' : 'intermediate'}`}>
+                              <div className={`node-circle ${isRequested ? 'requested' : ''}`}>
+                                {idx + 1}
+                              </div>
+                              <div className="node-info">
+                                <span className="node-name">{name}</span>
+                                <div className="node-tags">
+                                  {isStart && <span className="node-tag start">Start</span>}
+                                  {isEnd && <span className="node-tag end">End</span>}
+                                  {isRequested && !isStart && !isEnd && (
+                                    <span className="node-tag destination">Destination</span>
+                                  )}
+                                  {!isRequested && <span className="node-tag via">Via</span>}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {idx < pathToDisplay.length - 1 && (
+                              <div className="path-arrow">
+                                <ArrowRight size={20} strokeWidth={2.5} />
+                              </div>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          )}
-
-          {!loading && !error && !result && (
+          ) : !loading && !error && (
             <div className="empty-state">
-              <GraphVisualization routePath={[]} edges={edges} />
+              <GraphVisualization routePath={[]} graphData={graphData} />
               <div className="empty-overlay">
-                <MapPin size={64} strokeWidth={1} />
-                <h3>{routeMode === 3 ? 'Full Campus Mode' : 'Select Locations'}</h3>
+                <MapPin size={64} strokeWidth={1.5} />
+                <h3>Ready to Optimize</h3>
                 <p>
-                  {routeMode === 3
-                    ? 'Click Compute to traverse entire campus'
-                    : 'Choose locations and click Compute to find optimal route'}
+                  {routeMode === 3 
+                    ? 'Click "Compute" to traverse the entire campus' 
+                    : 'Select locations and click "Compute"'}
                 </p>
               </div>
             </div>

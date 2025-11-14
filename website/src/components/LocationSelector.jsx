@@ -1,32 +1,9 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Check } from 'lucide-react';
+import { Search, Check } from 'lucide-react';
 import '../styles/location-selector.css';
 
-const LocationSelector = ({ selectedLocations, onLocationToggle, disabled }) => {
+const LocationSelector = ({ locations = [], selectedLocations, onLocationToggle, disabled }) => {
   const [search, setSearch] = useState('');
-
-  const locations = [
-    'Main Gate',
-    'CSE Building',
-    'Library',
-    'Dining Hall',
-    'Hostel A',
-    'Lecture Hall Complex',
-    'Sports Complex',
-    'Innovation Center',
-    'Canteen',
-    'Medical Center',
-    'Admin Block',
-    'Parking Lot',
-    'Garden Park',
-    'Bus Stop',
-    'Cafeteria',
-    'Research Block',
-    'Old Boys Hostel',
-    'Student Activity Center',
-    'Lecture Hall B',
-    'Workshop'
-  ].sort();
 
   const filtered = locations.filter(loc =>
     loc.toLowerCase().includes(search.toLowerCase())

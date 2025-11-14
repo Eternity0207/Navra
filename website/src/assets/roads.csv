@@ -1,0 +1,112 @@
+from,to,time
+B1,B2,1
+B2,B3,1
+B3,B4,1
+G2,G3,1
+G3,G4,1
+G4,G5,1
+I2,I3,1
+Y3,Y4,1
+O3,O4,1
+CSE dept,BBSE dept,2
+BBSE dept,Basic Labs dept,1
+Basic Labs dept,Chemistry dept,1
+Chemistry dept,CSE dept,2
+B1,CSE dept,5
+B1,BBSE dept,5
+B1,Basic Labs dept,4
+B1,Chemistry dept,5
+Mech dept,EE dept,2
+EE dept,Physics dept,1
+Physics dept,Math dept,1
+Math dept,Mech dept,2
+CSE dept,Mech dept,3
+Chemistry dept,Physics dept,2
+CSE dept,Shamiyana,1
+Shamiyana,Mech dept,1
+Shamiyana,EE dept,2
+Admin Block,Library,1
+Library,Admin Block,1
+B1,Admin Block,4
+Admin Block,B1,4
+B3,Old Mess,3
+Old Mess,B4,3
+Old Mess,New Mess,1
+New Mess,Old Mess,1
+New Mess,G3,1
+New Mess,G4,1
+Hostel A,B1,5
+Hostel A,Old Mess,4
+Admin Block,Defense Installation,15
+Defense Installation,Control Tower,12
+Library,CSE dept,6
+Library,Mech dept,7
+Physics dept,Student Activity Center,5
+Main Gate,Knowledge Tree,7
+B2,B1,1
+B3,B2,1
+B4,B3,1
+B5,B4,1
+G3,G2,1
+G4,G3,1
+G5,G4,1
+G6,G5,1
+I3,I2,1
+Y4,Y3,1
+O4,O3,1
+G1,G2,1
+G2,G1,1
+B5,I2,2
+I2,B5,2
+I2,Old Mess,3
+Old Mess,I2,3
+I3,Old Mess,2
+Y3,B1,3
+B1,Y3,3
+Y4,CSE dept,4
+O3,New Mess,2
+New Mess,O3,2
+O4,Admin Block,3
+BBSE dept,CSE dept,2
+Basic Labs dept,BBSE dept,1
+Chemistry dept,Basic Labs dept,1
+EE dept,Mech dept,2
+Physics dept,EE dept,1
+Math dept,Physics dept,1
+Mech dept,CSE dept,3
+Physics dept,Chemistry dept,2
+Mech dept,Shamiyana,1
+Shamiyana,CSE dept,1
+EE dept,Shamiyana,2
+G1,New Mess,2
+New Mess,G1,2
+G1,Admin Block,3
+Admin Block,G1,3
+G6,Student Activity Center,3
+Student Activity Center,G6,3
+Student Activity Center,Physics dept,5
+Control Tower,Defense Installation,12
+Defense Installation,Admin Block,15
+CSE dept,Library,6
+Mech dept,Library,7
+CSE dept,B1,5
+BBSE dept,B1,5
+Basic Labs dept,B1,4
+Chemistry dept,B1,5
+Old Mess,B3,3
+B4,Old Mess,3
+G3,New Mess,1
+G4,New Mess,1
+B1,Hostel A,5
+Old Mess,Hostel A,4
+Knowledge Tree,Main Gate,7
+Main Gate,Hostel A,10
+Hostel A,Main Gate,10
+Main Gate,B1,12
+B1,Main Gate,12
+Knowledge Tree,B5,3
+B5,Knowledge Tree,3
+Knowledge Tree,I3,2
+I3,Knowledge Tree,2
+Control Tower,Student Activity Center,18
+Student Activity Center,Control Tower,18

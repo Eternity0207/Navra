@@ -1,27 +1,34 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 
-const GraphVisualization = ({ routePath = [], edges }) => {
+const GraphVisualization = ({ routePath = [], graphData }) => {
   const fgRef = useRef();
-  const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [highlightNodes, setHighlightNodes] = useState(new Set());
   const [highlightLinks, setHighlightLinks] = useState(new Set());
   const [hoverNode, setHoverNode] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(
-    window.matchMedia('(prefers-color-scheme: dark)').matches
-  );
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   // Detect theme changes
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e) => setIsDarkMode(e.matches);
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    const checkTheme = () => {
+      const htmlElement = document.documentElement;
+      const theme = htmlElement.getAttribute('data-theme');
+      setIsDarkMode(theme !== 'light');
+    };
+
+    checkTheme();
+    
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   // Theme-aware colors
   const colors = isDarkMode ? {
-    // Dark Mode
     background: '#0f1419',
     nodeDefault: '#94a3b8',
     nodeHighlight: '#6366f1',
@@ -35,7 +42,6 @@ const GraphVisualization = ({ routePath = [], edges }) => {
     timeLabel: { bg: '#1f2937', text: '#6366f1', border: '#4f46e5' },
     particle: '#6366f1',
   } : {
-    // Light Mode
     background: '#f8fafc',
     nodeDefault: '#64748b',
     nodeHighlight: '#6366f1',
@@ -51,46 +57,37 @@ const GraphVisualization = ({ routePath = [], edges }) => {
   };
 
   useEffect(() => {
-    const nodeSet = new Set();
-    const links = edges.map((edge) => {
-      const [from, to, time] = edge.split(',');
-      nodeSet.add(from.trim());
-      nodeSet.add(to.trim());
-      return {
-        source: from.trim(),
-        target: to.trim(),
-        value: parseInt(time.trim()),
-      };
-    });
-
-    const nodes = Array.from(nodeSet).map((name) => ({
-      id: name,
-      name: name,
-      val: 12,
-    }));
-
-    setGraphData({ nodes, links });
-  }, [edges]);
-
-  useEffect(() => {
-    if (routePath && routePath.length > 0) {
+    if (routePath && routePath.length > 0 && graphData) {
       const highlightNodesSet = new Set(routePath);
       const highlightLinksSet = new Set();
 
+      // Find links that connect consecutive nodes in the route
       for (let i = 0; i < routePath.length - 1; i++) {
-        const link = graphData.links.find(
-          (l) =>
-            (l.source.id || l.source) === routePath[i] &&
-            (l.target.id || l.target) === routePath[i + 1]
-        );
-        if (link) highlightLinksSet.add(link);
+        const sourceNode = routePath[i];
+        const targetNode = routePath[i + 1];
+
+        // Find the link connecting these two nodes
+        const link = graphData.links.find(l => {
+          const source = typeof l.source === 'object' ? l.source.id : l.source;
+          const target = typeof l.target === 'object' ? l.target.id : l.target;
+          
+          return (source === sourceNode && target === targetNode) ||
+                 (source === targetNode && target === sourceNode);
+        });
+
+        if (link) {
+          highlightLinksSet.add(link);
+        }
       }
 
       setHighlightNodes(highlightNodesSet);
       setHighlightLinks(highlightLinksSet);
 
-      if (fgRef.current) {
-        setTimeout(() => fgRef.current.zoomToFit(400, 100), 100);
+      // Zoom to fit the highlighted path
+      if (fgRef.current && highlightNodesSet.size > 0) {
+        setTimeout(() => {
+          fgRef.current.zoomToFit(400, 80);
+        }, 200);
       }
     } else {
       setHighlightNodes(new Set());
@@ -99,11 +96,13 @@ const GraphVisualization = ({ routePath = [], edges }) => {
   }, [routePath, graphData]);
 
   const paintNode = (node, ctx, globalScale) => {
-    const label = node.name;
+    const label = node.name || node.id;
     const fontSize = 14 / globalScale;
     const isHighlighted = highlightNodes.has(node.id);
     const isHovered = hoverNode === node;
     const nodeSize = isHighlighted ? 8 : 5;
+
+    ctx.save();
 
     // Outer glow for highlighted nodes
     if (isHighlighted) {
@@ -200,21 +199,27 @@ const GraphVisualization = ({ routePath = [], edges }) => {
       ctx.font = `bold ${11 / globalScale}px -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.fillText(index.toString(), node.x + nodeSize + 2, node.y - nodeSize - 2);
     }
+
+    ctx.restore();
   };
 
   const paintLink = (link, ctx, globalScale) => {
     const isHighlighted = highlightLinks.has(link);
+    
+    const sourceX = typeof link.source === 'object' ? link.source.x : 0;
+    const sourceY = typeof link.source === 'object' ? link.source.y : 0;
+    const targetX = typeof link.target === 'object' ? link.target.x : 0;
+    const targetY = typeof link.target === 'object' ? link.target.y : 0;
+
+    ctx.save();
 
     // Draw link with gradient if highlighted
     ctx.beginPath();
-    ctx.moveTo(link.source.x, link.source.y);
-    ctx.lineTo(link.target.x, link.target.y);
+    ctx.moveTo(sourceX, sourceY);
+    ctx.lineTo(targetX, targetY);
 
     if (isHighlighted) {
-      const gradient = ctx.createLinearGradient(
-        link.source.x, link.source.y,
-        link.target.x, link.target.y
-      );
+      const gradient = ctx.createLinearGradient(sourceX, sourceY, targetX, targetY);
       gradient.addColorStop(0, '#818cf8');
       gradient.addColorStop(0.5, colors.linkHighlight);
       gradient.addColorStop(1, '#4f46e5');
@@ -232,12 +237,12 @@ const GraphVisualization = ({ routePath = [], edges }) => {
       const arrowLength = 10 / globalScale;
       const arrowWidth = 6 / globalScale;
 
-      const dx = link.target.x - link.source.x;
-      const dy = link.target.y - link.source.y;
+      const dx = targetX - sourceX;
+      const dy = targetY - sourceY;
       const angle = Math.atan2(dy, dx);
 
-      const midX = (link.source.x + link.target.x) / 2;
-      const midY = (link.source.y + link.target.y) / 2;
+      const midX = (sourceX + targetX) / 2;
+      const midY = (sourceY + targetY) / 2;
 
       ctx.save();
       ctx.translate(midX, midY);
@@ -259,10 +264,10 @@ const GraphVisualization = ({ routePath = [], edges }) => {
     }
 
     // Enhanced time label with pill background
-    if (isHighlighted) {
+    if (isHighlighted && link.value) {
       const label = `${link.value} min`;
-      const midX = (link.source.x + link.target.x) / 2;
-      const midY = (link.source.y + link.target.y) / 2;
+      const midX = (sourceX + targetX) / 2;
+      const midY = (sourceY + targetY) / 2;
 
       ctx.font = `bold ${11 / globalScale}px -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.textAlign = 'center';
@@ -301,32 +306,49 @@ const GraphVisualization = ({ routePath = [], edges }) => {
       ctx.fillStyle = colors.timeLabel.text;
       ctx.fillText(label, midX, midY);
     }
+
+    ctx.restore();
   };
 
+  if (!graphData || !graphData.nodes || !graphData.links) {
+    return (
+      <div style={{ 
+        width: '100%',
+        height: '100%',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: colors.background 
+      }}>
+        <p style={{ color: colors.labelDefault }}>Loading graph...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="graph-wrapper">
-      <ForceGraph2D
-        ref={fgRef}
-        graphData={graphData}
-        backgroundColor={colors.background}
-        nodeCanvasObject={paintNode}
-        nodeCanvasObjectMode={() => 'replace'}
-        linkCanvasObject={paintLink}
-        linkCanvasObjectMode={() => 'replace'}
-        linkDirectionalParticles={link => highlightLinks.has(link) ? 6 : 0}
-        linkDirectionalParticleWidth={4}
-        linkDirectionalParticleSpeed={0.006}
-        linkDirectionalParticleColor={() => colors.particle}
-        onNodeHover={setHoverNode}
-        d3VelocityDecay={0.3}
-        d3AlphaDecay={0.02}
-        cooldownTime={3000}
-        warmupTicks={100}
-        enableNodeDrag={true}
-        enableZoomInteraction={true}
-        enablePanInteraction={true}
-      />
-    </div>
+    <ForceGraph2D
+      ref={fgRef}
+      graphData={graphData}
+      width={window.innerWidth}
+      height={window.innerHeight}
+      backgroundColor={colors.background}
+      nodeCanvasObject={paintNode}
+      nodeCanvasObjectMode={() => 'replace'}
+      linkCanvasObject={paintLink}
+      linkCanvasObjectMode={() => 'replace'}
+      linkDirectionalParticles={link => highlightLinks.has(link) ? 4 : 0}
+      linkDirectionalParticleWidth={3}
+      linkDirectionalParticleSpeed={0.005}
+      linkDirectionalParticleColor={() => colors.particle}
+      onNodeHover={setHoverNode}
+      d3VelocityDecay={0.3}
+      d3AlphaDecay={0.02}
+      cooldownTime={2000}
+      warmupTicks={50}
+      enableNodeDrag={true}
+      enableZoomInteraction={true}
+      enablePanInteraction={true}
+    />
   );
 };
 

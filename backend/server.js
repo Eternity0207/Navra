@@ -29,9 +29,10 @@ app.post("/api/route", (req, res) => {
     }
 
     const child = spawn(exePath, [], {
-        cwd: __dirname,
+        cwd: path.join(__dirname, "..", "backend"),
         stdio: ['pipe', 'pipe', 'pipe']
     });
+
 
 
     // Track if response was sent

@@ -29,8 +29,10 @@ app.post("/api/route", (req, res) => {
     }
 
     const child = spawn(exePath, [], {
+        cwd: __dirname,
         stdio: ['pipe', 'pipe', 'pipe']
     });
+
 
     // Track if response was sent
     let responseSent = false;
@@ -109,15 +111,15 @@ app.post("/api/route", (req, res) => {
             const jsonData = JSON.parse(output);
             console.log("=== Parsed JSON ===");
             console.log(jsonData);
-            
+
             // Validate response structure
             if (!jsonData.routeNames || !Array.isArray(jsonData.routeNames)) {
                 throw new Error("Invalid response: missing routeNames array");
             }
-            
+
             // Send success response
             res.json(jsonData);
-            
+
         } catch (err) {
             console.error("ERROR: Failed to parse JSON:", err.message);
             return res.status(500).json({

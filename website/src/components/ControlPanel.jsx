@@ -40,7 +40,7 @@ const Optimizer = () => {
         locations: routeMode === 3 ? [] : selectedLocations
       };
 
-      const response = await axios.post('http://localhost:5000/api/route', payload);
+      const response = await axios.post('https://navra-rxsw.vercel.app/api/route', payload);
 
       if (response.data.success) {
         setResult(response.data);

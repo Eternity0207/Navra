@@ -7,7 +7,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000/api/route',
+        target: 'https://navra-rxsw.vercel.app/api/route',
         changeOrigin: true
       }
     }

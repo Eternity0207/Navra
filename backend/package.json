@@ -6,6 +6,6 @@
     "path": "^0.12.7"
   },
   "scripts": {
-    "postinstall": "chmod +x /optimizer"
+    "postinstall": "chmod +x backend/optimizer"
   }
 }

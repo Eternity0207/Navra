@@ -72,7 +72,7 @@ vector<int> getLocationInput(const Graph& g) {
 }
 
 //
-// Display final route
+// Display final route with full intermediate path
 //
 void printRoute(const RouteResult& result, const Graph& g) {
     cout << "\n============================================\n";
@@ -84,9 +84,24 @@ void printRoute(const RouteResult& result, const Graph& g) {
     cout << "Total Time     : " << result.totalTime << " minutes\n";
     cout << "Total Stops    : " << result.attractionIds.size() << "\n\n";
 
+    // Print requested stops
+    cout << "Requested Stops (in order):\n";
     for (size_t i = 0; i < result.attractionIds.size(); ++i) {
         auto a = g.getAttraction(result.attractionIds[i]);
         cout << (i + 1) << ". " << a.name << "\n";
+    }
+
+    // Print FULL PATH
+    cout << "\nFULL OPTIMAL PATH (including intermediate nodes):\n";
+    if (result.fullPath.empty()) {
+        cout << "(No path reconstructed)\n";
+    } else {
+        for (size_t i = 0; i < result.fullPath.size(); ++i) {
+            auto a = g.getAttraction(result.fullPath[i]);
+            if (i == 0) cout << a.name;
+            else        cout << " -> " << a.name;
+        }
+        cout << "\n";
     }
 
     cout << "============================================\n";
@@ -111,7 +126,7 @@ int main() {
         if (!(cin >> choice)) {
             cin.clear();
             cin.ignore(10000, '\n');
-            cout << "\n[ERROR] Invalid input. Please enter 1–4.\n";
+            cout << "\n[ERROR] Invalid input. Please enter 1-4.\n";
             continue;
         }
         cin.ignore();
@@ -179,7 +194,7 @@ int main() {
         bool flexibleOrder = (choice == 1);
 
         if (flexibleOrder) {
-            cout << "\n[INFO] Running: Traveling Salesman Problem (TSP) - Optimal Reordering\n";
+            cout << "\n[INFO] Running: Traveling Salesman Problem (TSP) — Optimal Reordering\n";
         } else {
             cout << "\n[INFO] Running: Fixed Order Route using Dijkstra's Shortest Path Algorithm\n";
         }

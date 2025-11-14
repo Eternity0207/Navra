@@ -6,7 +6,8 @@
 #include <string>
 
 struct RouteResult {
-    std::vector<int> attractionIds;
+    std::vector<int> attractionIds;   // only selected stops in order
+    std::vector<int> fullPath;        // FULL actual path including intermediate nodes
     double totalTime = 0.0;
     std::string algorithm;
 };
@@ -14,6 +15,7 @@ struct RouteResult {
 class RouteOptimizer {
 private:
     Graph graph;
+
 public:
     RouteOptimizer() = default;
     void setGraph(const Graph& g) { graph = g; }

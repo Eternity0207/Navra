@@ -6,13 +6,13 @@
 class DSU {
 private:
     std::vector<int> parent;
-    std::vector<int> rank;
+    std::vector<int> rankv;
 
 public:
-    DSU(int n);
+    DSU(int n = 0);
     int find(int x);
     bool unite(int x, int y);
-    int size() const { return parent.size(); }
+    int size() const { return (int)parent.size(); }
 };
 
-#endif
+#endif // DSU_H

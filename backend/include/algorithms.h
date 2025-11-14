@@ -1,39 +1,38 @@
 #ifndef ALGORITHMS_H
 #define ALGORITHMS_H
 
-#include "graph.h"
+// forward declare Graph to avoid circular include with graph.h
+class Graph;
+
 #include <vector>
 #include <utility>
 
-// Dijkstra's algorithm - O(E log V)
+// Dijkstra
 std::vector<double> dijkstra(const Graph& g, int start);
 std::pair<std::vector<double>, std::vector<int>> dijkstraWithPath(const Graph& g, int start);
 std::vector<int> reconstructPath(const std::vector<int>& parent, int start, int end);
 
-// A* algorithm - O(E log V) with heuristic
+// A*
 std::vector<int> aStarPath(const Graph& g, int start, int goal);
 double haversine(double lat1, double lon1, double lat2, double lon2);
 
-// TSP algorithms
+// TSP
 std::pair<double, std::vector<int>> tspDP(const std::vector<std::vector<double>>& dist);
-std::pair<double, std::vector<int>> tspMSTApproximation(const Graph& g, const std::vector<int>& locations);
-std::pair<double, std::vector<int>> greedyTSP(const Graph& g, int start, const std::vector<int>& mustVisit);
+std::pair<double, std::vector<int>> tspMSTApproximation(const Graph& g, const std::vector<int>& locs);
+std::pair<double, std::vector<int>> greedyTSP(const Graph& g, int start, const std::vector<int>& locs);
 void twoOptImprovement(std::vector<int>& tour, const std::vector<std::vector<double>>& dist);
+std::pair<double, std::vector<int>> computeOptimalRouteFree(const Graph& g, const std::vector<int>& locs);
 
-// Kruskal's MST
+// Kruskal & MST
 struct Edge {
     int u, v;
     double weight;
-    bool operator<(const Edge& other) const;
+    bool operator<(const Edge& other) const { return weight < other.weight; }
 };
-
 std::vector<Edge> kruskalMST(std::vector<Edge>& edges, int n);
 std::vector<int> mstToTour(const std::vector<Edge>& mst, int n, int start);
 
-// Route computation for ordered list
-std::pair<double, std::vector<int>> computeOrderedRoute(const Graph& g, const std::vector<int>& orderedList);
+// Ordered route helper (fixed-order)
+std::pair<double, std::vector<int>> computeOrderedRoute(const Graph& g, const std::vector<int>& order);
 
-// Smart algorithm selector
-std::pair<double, std::vector<int>> computeOptimalRoute(const Graph& g, const std::vector<int>& locations, bool flexibleOrder);
-
-#endif
+#endif // ALGORITHMS_H

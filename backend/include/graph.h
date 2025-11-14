@@ -5,21 +5,23 @@
 #include <vector>
 #include <string>
 #include <map>
+
 #include "attraction.h"
-#include "dsu.h"
+#include "../include/dsu.h"
+
+
+struct Edge; 
 
 class Graph {
 private:
     std::unordered_map<int, Attraction> attractions;
     std::unordered_map<int, std::vector<std::pair<int, double>>> adjList;
     std::map<std::string, int> nameToId;
-
     int numVertices;
-
-    DSU* dsu;  
-
+    DSU* dsu;
 public:
     Graph();
+    ~Graph();
 
     void addAttraction(const Attraction& attr);
     void addEdge(int from, int to, double weight);
@@ -37,8 +39,14 @@ public:
     void loadFromCSV(const std::string& attractionsFile, const std::string& roadsFile);
 
     void buildDSU();
-    DSU* getDSU() const { return dsu; }   // IMPORTANT: return pointer, NOT value
-    int getComponent(int id) const { return dsu->find(id); }
+    DSU* getDSU() const { return dsu; }
+    int getComponent(int id) const { return dsu ? dsu->find(id) : -1; }
+
+    bool isValidAttraction(int id) const;
+    bool isFullyConnected() const;
+
+    std::vector<Edge> getAllEdges() const;
+    int maxNodeId() const;
 };
 
-#endif
+#endif // GRAPH_H

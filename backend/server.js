@@ -16,7 +16,7 @@ app.post("/api/route", (req, res) => {
     console.log("=== Received Request ===");
     console.log("Request body:", JSON.stringify(req.body, null, 2));
 
-    const exePath = path.join(__dirname, "optimizer.exe");
+    const exePath = path.join(__dirname, "optimizer");
     console.log("Executable path:", exePath);
 
     const fs = require('fs');
@@ -145,5 +145,5 @@ app.post("/api/route", (req, res) => {
 
 const PORT = 5000;
 app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:5000`);
+    console.log(`Backend is running!`);
 });

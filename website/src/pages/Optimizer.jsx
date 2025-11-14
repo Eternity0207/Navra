@@ -20,10 +20,10 @@ const Optimizer = () => {
   useEffect(() => {
     const loadCSVData = async () => {
       try {
-        const attractionsResponse = await fetch('/src/assets/attractions.csv');
+        const attractionsResponse = await fetch('/attractions.csv');
         const attractionsText = await attractionsResponse.text();
         
-        const roadsResponse = await fetch('/src/assets/roads.csv');
+        const roadsResponse = await fetch('/roads.csv');
         const roadsText = await roadsResponse.text();
 
         const attractionLines = attractionsText.trim().split('\n');

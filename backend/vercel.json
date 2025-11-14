@@ -1,10 +1,7 @@
 {
     "functions": {
-        "api/**.js": {
-            "includeFiles": [
-                "attractions.csv",
-                "roads.csv"
-            ]
+        "api/*.js": {
+            "includeFiles": "/*.csv"
         }
     }
 }

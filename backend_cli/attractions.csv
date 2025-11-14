@@ -1,19 +1,37 @@
 name,category,rating,duration,fee,popularity,latitude,longitude
-Main Gate,Entry,4.5,5,0,1000,26.2621,73.0281
-Admin Block,Administration,4.3,20,0,700,26.2623,73.0289
-Library,Academic,4.8,45,0,850,26.2624,73.0284
-CSE Building,Academic,4.7,30,0,900,26.2623,73.0287
-Dining Hall,Food,4.0,25,50,700,26.2622,73.0279
-Hostel A,Residence,4.1,20,0,650,26.2620,73.0283
-Sports Complex,Sports,4.4,60,0,750,26.2630,73.0290
-Student Activity Center,Activity,4.6,35,0,760,26.2632,73.0291
-Research Block,Academic,4.7,50,0,880,26.2626,73.0283
-Workshop,Utility,4.0,45,0,580,26.2628,73.0289
-Medical Center,Health,4.3,25,0,680,26.2628,73.0285
-Parking Lot,Utility,3.8,5,0,400,26.2629,73.0288
-Innovation Lab,Tech,4.9,40,0,930,26.2642,73.0301
-Startup Incubator,Tech,4.8,60,0,920,26.2645,73.0304
-Robotics Bay,Tech,4.7,55,0,910,26.2641,73.0307
-Testing Ground,Tech,4.6,50,0,890,26.2643,73.0310
-Control Tower,Tech,4.4,35,0,850,26.2644,73.0309
-Lost Hut,Mystery,3.0,10,0,50,26.2610,73.0320
+B1,hostel,4.1,10,0,80,26.26205,73.02828
+B2,hostel,4.0,10,0,76,26.26210,73.02822
+B3,hostel,3.9,10,0,70,26.26214,73.02816
+B4,hostel,3.8,10,0,68,26.26218,73.02810
+B5,hostel,3.7,10,0,65,26.26222,73.02804
+G1,hostel,4.1,10,0,75,26.26290,73.02910
+G2,hostel,4.0,10,0,72,26.26294,73.02906
+G3,hostel,4.0,10,0,70,26.26298,73.02902
+G4,hostel,3.9,10,0,67,26.26302,73.02898
+G5,hostel,3.8,10,0,64,26.26306,73.02894
+G6,hostel,3.7,10,0,61,26.26310,73.02890
+I2,hostel,4.0,10,0,65,26.26255,73.02810
+I3,hostel,3.9,10,0,62,26.26258,73.02806
+Y3,hostel,3.8,10,0,60,26.26245,73.02860
+Y4,hostel,3.7,10,0,58,26.26248,73.02856
+O3,hostel,3.8,10,0,60,26.26275,73.02940
+O4,hostel,3.7,10,0,58,26.26278,73.02936
+Hostel A,hostel,4.2,10,0,82,26.26200,73.02830
+Old Mess,mess,3.8,30,50,75,26.26216,73.02800
+New Mess,mess,4.1,30,60,88,26.26300,73.02898
+CSE dept,academic dept,4.6,45,0,92,26.26232,73.02872
+BBSE dept,academic dept,4.4,45,0,84,26.26236,73.02864
+Basic Labs dept,academic dept,4.3,40,0,80,26.26240,73.02858
+Chemistry dept,academic dept,4.2,40,0,78,26.26244,73.02852
+Mech dept,academic dept,4.3,45,0,84,26.26272,73.02890
+EE dept,academic dept,4.4,45,0,86,26.26276,73.02884
+Physics dept,academic dept,4.5,45,0,87,26.26280,73.02878
+Math dept,academic dept,4.4,45,0,83,26.26284,73.02872
+Shamiyana,facility,4.0,20,0,65,26.26258,73.02866
+Admin Block,facility,4.5,20,0,90,26.26230,73.02890
+Library,facility,4.7,60,0,96,26.26234,73.02882
+Student Activity Center,facility,4.6,35,0,76,26.26320,73.02910
+Defense Installation,facility,4.0,25,20,50,26.26395,73.02995
+Control Tower,facility,4.1,20,0,55,26.26405,73.03005
+Knowledge Tree,landmark,4.8,15,0,95,26.26165,73.02810
+Main Gate,entry,4.5,10,0,900,26.26120,73.02750

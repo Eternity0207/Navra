@@ -1,21 +1,45 @@
 from,to,time
-Main Gate,Admin Block,4
-Admin Block,Library,3
-Library,CSE Building,2
-CSE Building,Dining Hall,3
-Dining Hall,Hostel A,3
-Hostel A,Main Gate,5
-Parking Lot,Admin Block,2
-Sports Complex,Parking Lot,3
-Sports Complex,Student Activity Center,4
-Student Activity Center,Workshop,3
-Workshop,Medical Center,2
-Medical Center,Library,3
-Research Block,CSE Building,4
-Research Block,Workshop,5
-Innovation Lab,Startup Incubator,3
-Startup Incubator,Robotics Bay,4
-Robotics Bay,Testing Ground,2
-Testing Ground,Control Tower,3
-Control Tower,Innovation Lab,4
-# Lost Hut is intentionally isolated (no edge to others)
+B1,B2,1
+B2,B3,1
+B3,B4,1
+G2,G3,1
+G3,G4,1
+G4,G5,1
+I2,I3,1
+Y3,Y4,1
+O3,O4,1
+CSE dept,BBSE dept,2
+BBSE dept,Basic Labs dept,1
+Basic Labs dept,Chemistry dept,1
+Chemistry dept,CSE dept,2
+B1,CSE dept,5
+B1,BBSE dept,5
+B1,Basic Labs dept,4
+B1,Chemistry dept,5
+Mech dept,EE dept,2
+EE dept,Physics dept,1
+Physics dept,Math dept,1
+Math dept,Mech dept,2
+CSE dept,Mech dept,3
+Chemistry dept,Physics dept,2
+CSE dept,Shamiyana,1
+Shamiyana,Mech dept,1
+Shamiyana,EE dept,2
+Admin Block,Library,1
+Library,Admin Block,1
+B1,Admin Block,4
+Admin Block,B1,4
+B3,Old Mess,3
+Old Mess,B4,3
+Old Mess,New Mess,1
+New Mess,Old Mess,1
+New Mess,G3,1
+New Mess,G4,1
+Hostel A,B1,5
+Hostel A,Old Mess,4
+Admin Block,Defense Installation,15
+Defense Installation,Control Tower,12
+Library,CSE dept,6
+Library,Mech dept,7
+Physics dept,Student Activity Center,5
+Main Gate,Knowledge Tree,7

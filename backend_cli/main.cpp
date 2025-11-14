@@ -2,165 +2,113 @@
 #include <vector>
 #include <string>
 #include <iomanip>
-#include <limits>
-#include <chrono>
-#include <algorithm>
 #include "include/graph.h"
-#include "include/algorithms.h"
 #include "include/route_optimizer.h"
+#include "include/algorithms.h"
+#include <algorithm>
+
 
 using namespace std;
-using namespace chrono;
 
 void displayMenu() {
-    cout << "\n========================================" << endl;
-    cout << "    IIT JODHPUR ROUTE OPTIMIZER" << endl;
-    cout << "========================================" << endl;
-    cout << "1. Flexible Order (TSP Optimization)" << endl;
-    cout << "2. Fixed Order (Dijkstra)" << endl;
-    cout << "3. Exit" << endl;
-    cout << "========================================" << endl;
+    cout << "\n========================================\n";
+    cout << "    IIT JODHPUR ROUTE OPTIMIZER\n";
+    cout << "========================================\n";
+    cout << "1. Flexible Order (TSP Optimization)\n";
+    cout << "2. Fixed Order (Dijkstra)\n";
+    cout << "3. Exit\n";
+    cout << "4. Traverse Entire Graph (Kruskal + DFS + A*)\n";
+    cout << "========================================\n";
     cout << "Enter your choice: ";
 }
 
 void displayLocations(const Graph& g) {
-    cout << "\n--- Available Locations ---" << endl;
-    
-    vector<int> ids = g.getAllAttractionIds();
+    cout << "\n--- Available Locations ---\n";
+    auto ids = g.getAllAttractionIds();
     sort(ids.begin(), ids.end());
-    
     for (int id : ids) {
-        Attraction attr = g.getAttraction(id);
-        cout << setw(2) << id << ". " << attr.name << " [" << attr.category << "]" << endl;
+        auto a = g.getAttraction(id);
+        cout << setw(2) << id << ". " << a.name << " [" << a.category << "]\n";
     }
-    cout << "----------------------------\n" << endl;
+    cout << "----------------------------\n";
 }
 
 vector<int> getLocationInput(const Graph& g) {
     int n;
     cout << "Enter number of locations to visit: ";
-    cin >> n;
+    if (!(cin >> n)) { cin.clear(); cin.ignore(10000,'\n'); return {}; }
     cin.ignore();
-
-    vector<int> locations;
-    cout << "Enter location names:" << endl;
-    
-    for (int i = 0; i < n; i++) {
+    vector<int> locs;
+    cout << "Enter location names:\n";
+    for (int i = 0; i < n; ++i) {
         string name;
-        cout << "  " << (i + 1) << ". ";
+        cout << "  " << (i+1) << ". ";
         getline(cin, name);
-        
         int id = g.getIdByName(name);
-        locations.push_back(id); // <-- keep ID as is, even if = -1
+        locs.push_back(id);
     }
-    
-    return locations;
+    return locs;
 }
 
 void printRoute(const RouteResult& result, const Graph& g) {
-    cout << "\n========================================" << endl;
-    cout << "         OPTIMAL ROUTE" << endl;
-    cout << "========================================" << endl;
-    cout << "Algorithm Used: " << result.algorithm << endl;
+    cout << "\n========================================\n";
+    cout << "         OPTIMAL ROUTE\n";
+    cout << "========================================\n";
+    cout << "Algorithm Used: " << result.algorithm << "\n";
     cout << fixed << setprecision(2);
-    cout << "Total Time: " << result.totalTime << " minutes" << endl;
-    cout << "Stops: " << result.attractionIds.size() << " locations\n" << endl;
-    
-    for (size_t i = 0; i < result.attractionIds.size(); i++) {
-        Attraction attr = g.getAttraction(result.attractionIds[i]);
-        cout << (i + 1) << ". " << attr.name << endl;
-        
-        if (i < result.attractionIds.size() - 1) {
-            auto dijkResult = dijkstraWithPath(g, result.attractionIds[i]);
-            double time = dijkResult.first[result.attractionIds[i + 1]];
-            if (time < numeric_limits<double>::infinity()) {
-                cout << "     v  (" << time << " min)" << endl;
-            }
-        }
+    cout << "Total Time: " << result.totalTime << " minutes\n";
+    cout << "Stops: " << result.attractionIds.size() << " locations\n\n";
+    for (size_t i = 0; i < result.attractionIds.size(); ++i) {
+        auto a = g.getAttraction(result.attractionIds[i]);
+        cout << (i+1) << ". " << a.name << "\n";
     }
-    cout << "========================================\n" << endl;
+    cout << "========================================\n";
 }
 
 int main() {
     Graph graph;
     graph.loadFromCSV("attractions.csv", "roads.csv");
-    
+
     RouteOptimizer optimizer;
     optimizer.setGraph(graph);
-    
+
     displayLocations(graph);
-    
+
     while (true) {
         displayMenu();
         int choice;
-        cin >> choice;
+        if (!(cin >> choice)) { cin.clear(); cin.ignore(10000,'\n'); continue; }
         cin.ignore();
-        
-        if (choice == 3) {
-            cout << "\nThank you for using Route Optimizer!\n" << endl;
-            break;
+        if (choice == 3) { cout << "\nThank you for using Route Optimizer!\n"; break; }
+        if (choice == 4) {
+            auto res = optimizer.computeFullGraphRoute();
+            if (res.attractionIds.empty()) cout << "[ERROR] Entire graph is NOT connected. Full traversal impossible.\n";
+            else printRoute(res, graph);
+            continue;
         }
-        
         vector<int> locations = getLocationInput(graph);
+        if (locations.empty()) { cout << "No locations selected.\n"; continue; }
 
-        if (locations.empty()) {
-            cout << "No locations selected." << endl;
-            continue;
-        }
-
-        // -----------------------------------------------
-        // 0. CHECK INVALID IDS (ID = -1)
-        // -----------------------------------------------
+        // check invalid ids
         bool hasInvalid = false;
-        for (int id : locations) {
-            if (id == -1) {
-                hasInvalid = true;
-                break;
-            }
-        }
-
-        // Invalid multi-location request → reject
+        for (int id : locations) if (id == -1) hasInvalid = true;
         if (hasInvalid && locations.size() > 1) {
-            cout << "\n[ERROR] Selected locations are NOT reachable from each other." << endl;
+            cout << "\n[ERROR] Selected locations are NOT reachable from each other.\n";
             continue;
         }
-        // Single invalid node is allowed (DSU-T4)
-        // -----------------------------------------------
-
-        // -----------------------------------------------
-        // 1. DSU CONNECTIVITY CHECK (only when valid)
-        // -----------------------------------------------
         if (!hasInvalid) {
             DSU* dsu = graph.getDSU();
-            int root = dsu->find(locations[0]);
-
-            bool ok = true;
-            for (int id : locations) {
-                if (dsu->find(id) != root) {
-                    ok = false;
-                    break;
-                }
-            }
-
-            if (!ok) {
-                cout << "\n[ERROR] Selected locations are NOT reachable from each other." << endl;
-                continue;
+            if (dsu) {
+                int root = dsu->find(locations[0]);
+                bool ok = true;
+                for (int id : locations) if (dsu->find(id) != root) { ok = false; break; }
+                if (!ok) { cout << "\n[ERROR] Selected locations are NOT reachable from each other.\n"; continue; }
             }
         }
-        // -----------------------------------------------
 
-        auto startTime = high_resolution_clock::now();
-        
-        bool flexibleOrder = (choice == 1);
-        RouteResult result = optimizer.computeOptimalRoute(locations, flexibleOrder);
-        
-        auto endTime = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(endTime - startTime);
-        
-        cout << "\n[Completed] in " << duration.count() << "ms" << endl;
-        
-        printRoute(result, graph);
+        bool flexible = (choice == 1);
+        RouteResult res = optimizer.computeOptimalRoute(locations, flexible);
+        printRoute(res, graph);
     }
-    
     return 0;
 }

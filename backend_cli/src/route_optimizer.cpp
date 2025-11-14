@@ -1,160 +1,74 @@
 #include "../include/route_optimizer.h"
 #include "../include/algorithms.h"
+#include <algorithm>
+#include <unordered_set>
 #include <limits>
-#include <iostream>
 
 using namespace std;
 
-// Build distance matrix using Dijkstra for all pairs
-vector<vector<double>> RouteOptimizer::buildDistanceMatrix(
-    const vector<int>& locations) {
-    
-    int n = locations.size();
-    vector<vector<double>> dist(n, 
-        vector<double>(n, numeric_limits<double>::infinity()));
-    
-    for (int i = 0; i < n; i++) {
-        dist[i][i] = 0;
-        auto dijkDist = dijkstra(graph, locations[i]);
-        
-        for (int j = 0; j < n; j++) {
-            if (i != j) {
-                dist[i][j] = dijkDist[locations[j]];
-            }
-        }
-    }
-    
-    return dist;
-}
+extern vector<Edge> kruskalMST(vector<Edge>& edges, int n);
+extern vector<int> mstToTour(const vector<Edge>& mst, int n, int start);
+extern vector<int> aStarPath(const Graph& g, int start, int goal);
+extern pair<vector<double>, vector<int>> dijkstraWithPath(const Graph& g, int start);
 
-// Evaluate route and create result object
-RouteResult RouteOptimizer::evaluateRoute(const vector<int>& route, 
-                                         const string& algorithmName) {
-    RouteResult result;
-    result.attractionIds = route;
-    result.totalTime = 0;
-    result.algorithm = algorithmName;
-    
-    // Calculate total travel time
-    for (size_t i = 0; i < route.size() - 1; i++) {
-        auto dijkResult = dijkstraWithPath(graph, route[i]);
-        double segmentTime = dijkResult.first[route[i + 1]];
-        
-        if (segmentTime < numeric_limits<double>::infinity()) {
-            result.totalTime += segmentTime;
-        }
-    }
-    
-    return result;
-}
+RouteResult RouteOptimizer::computeFullGraphRoute() {
+    RouteResult res;
+    res.algorithm = "Kruskal + DFS + A*";
 
-// Main route computation function
-RouteResult RouteOptimizer::computeOptimalRoute(const vector<int>& locations, 
-                                                bool flexibleOrder) {
-    RouteResult result;
-    
-    // Handle edge cases
-    if (locations.empty()) {
-        // cout << "[RouteOptimizer] Error: No locations provided" << endl;
-        return result;
+    vector<int> nodes = graph.getAllAttractionIds();
+    if (nodes.empty()) { res.algorithm += " (Empty)"; return res; }
+    DSU* dsu = graph.getDSU();
+    if (!dsu) { res.algorithm += " (No DSU)"; return res; }
+
+    int root = dsu->find(nodes[0]);
+    for (int id : nodes) if (dsu->find(id) != root) { res.algorithm += " (Graph not connected)"; return res; }
+
+    vector<Edge> edges = graph.getAllEdges();
+    int maxId = graph.maxNodeId();
+    vector<Edge> mst = kruskalMST(edges, maxId + 1);
+    int startNode = *min_element(nodes.begin(), nodes.end());
+    vector<int> tour = mstToTour(mst, maxId + 1, startNode);
+
+    unordered_set<int> seen;
+    vector<int> finalOrder;
+    for (int id : tour) {
+        if (graph.isValidAttraction(id) && !seen.count(id)) { finalOrder.push_back(id); seen.insert(id); }
     }
-    
-    if (locations.size() == 1) {
-        result.attractionIds = locations;
-        result.totalTime = 0;
-        result.algorithm = "Single Location";
-        return result;
-    }
-    
-    vector<int> route;
-    string algorithm;
-    
-    if (flexibleOrder) {
-        // ========================================
-        // FLEXIBLE ORDER: Use TSP Optimization
-        // ========================================
-        
-        int n = locations.size();
-        // cout << "[RouteOptimizer] Computing flexible order for " 
-                //   << n << " locations..." << endl;
-        
-        // Build distance matrix
-        vector<vector<double>> distMatrix = buildDistanceMatrix(locations);
-        
-        if (n <= 10) {
-            // Small instance: Use exact TSP DP
-            // cout << "[Algorithm] TSP Dynamic Programming (Exact)" << endl;
-            algorithm = "TSP DP (Exact)";
-            
-            auto tspResult = tspDP(distMatrix);
-            
-            if (!tspResult.second.empty()) {
-                for (int idx : tspResult.second) {
-                    route.push_back(locations[idx]);
-                }
-            }
-            
-        } else if (n <= 15) {
-            // Medium instance: Compare DP vs MST
-            // cout << "[Algorithm] Comparing TSP DP vs MST Approximation..." << endl;
-            
-            auto dpResult = tspDP(distMatrix);
-            auto mstResult = tspMSTApproximation(graph, locations);
-            
-            if (dpResult.first <= mstResult.first) {
-                cout << "[Selected] TSP DP (Time: " << dpResult.first << ")" << endl;
-                algorithm = "TSP DP (Exact)";
-                for (int idx : dpResult.second) {
-                    route.push_back(locations[idx]);
-                }
-            } else {
-                cout << "[Selected] MST Approximation (Time: " << mstResult.first << ")" << endl;
-                algorithm = "MST + 2-Opt";
-                for (int idx : mstResult.second) {
-                    route.push_back(locations[idx]);
-                }
-            }
-            
+
+    double total = 0;
+    for (size_t i = 0; i + 1 < finalOrder.size(); ++i) {
+        int u = finalOrder[i], v = finalOrder[i+1];
+        vector<int> path = aStarPath(graph, u, v);
+        if (path.empty()) {
+            double seg = dijkstraWithPath(graph, u).first[v];
+            if (seg == numeric_limits<double>::infinity()) res.algorithm += " (Unreachable)"; else total += seg;
         } else {
-            // Large instance: Use MST approximation
-            // cout << "[Algorithm] MST-based Approximation (n > 15)" << endl;
-            algorithm = "MST + 2-Opt + Greedy";
-            
-            auto mstResult = tspMSTApproximation(graph, locations);
-            
-            if (!mstResult.second.empty()) {
-                for (int idx : mstResult.second) {
-                    route.push_back(locations[idx]);
-                }
+            for (size_t k = 0; k + 1 < path.size(); ++k) {
+                double seg = dijkstraWithPath(graph, path[k]).first[path[k+1]];
+                if (seg == numeric_limits<double>::infinity()) res.algorithm += " (Unreachable)"; else total += seg;
             }
         }
-        
-    } else {
-        // ========================================
-        // FIXED ORDER: Use Dijkstra/A* Hybrid
-        // ========================================
-        
-        // cout << "[RouteOptimizer] Computing fixed order route..." << endl;
-        // cout << "[Algorithm] Dijkstra/A* Hybrid" << endl;
-        algorithm = "Dijkstra + A*";
-        
-        auto orderedResult = computeOrderedRoute(graph, locations);
-        route = orderedResult.second;
     }
-    
-    // Evaluate and return result
-    if (route.empty()) {
-        // cout << "[RouteOptimizer] Warning: No valid route found" << endl;
-        result.algorithm = algorithm + " (Failed)";
-        return result;
+
+    res.attractionIds = finalOrder;
+    res.totalTime = total;
+    return res;
+}
+
+RouteResult RouteOptimizer::computeOptimalRoute(const vector<int>& locations, bool flexibleOrder) {
+    RouteResult rr;
+    if (locations.empty()) { rr.algorithm = "None"; return rr; }
+    if (locations.size() == 1) { rr.attractionIds = locations; rr.totalTime = 0; rr.algorithm = "Single"; return rr; }
+    if (!flexibleOrder) {
+        auto p = computeOrderedRoute(graph, locations);
+        rr.totalTime = p.first;
+        rr.attractionIds = p.second;
+        rr.algorithm = "Fixed Order";
+        return rr;
     }
-    
-    result = evaluateRoute(route, algorithm);
-    
-    // cout << "[RouteOptimizer] Route computed successfully" << endl;
-    // cout << "  - Locations: " << result.attractionIds.size() << endl;
-    // cout << "  - Total Time: " << result.totalTime << " minutes" << endl;
-    // cout << "  - Algorithm: " << result.algorithm << endl;
-    
-    return result;
+    auto freeRes = computeOptimalRouteFree(graph, locations);
+    rr.totalTime = freeRes.first;
+    for (int idx : freeRes.second) rr.attractionIds.push_back(locations[idx]);
+    rr.algorithm = "Flexible TSP";
+    return rr;
 }

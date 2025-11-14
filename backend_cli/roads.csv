@@ -1,24 +1,21 @@
 from,to,time
-Main Gate,CSE Building,3
-CSE Building,Library,2
-Library,Dining Hall,4
+Main Gate,Admin Block,4
+Admin Block,Library,3
+Library,CSE Building,2
+CSE Building,Dining Hall,3
 Dining Hall,Hostel A,3
 Hostel A,Main Gate,5
-Main Gate,Admin Block,4
-Admin Block,Parking Lot,2
-Parking Lot,Sports Complex,3
+Parking Lot,Admin Block,2
+Sports Complex,Parking Lot,3
 Sports Complex,Student Activity Center,4
-Student Activity Center,Old Boys Hostel,2
-Old Boys Hostel,Sports Complex,3
-Library,Lecture Hall Complex,2
-Lecture Hall Complex,CSE Building,2
-Innovation Center,Canteen,3
-Canteen,Medical Center,2
-Medical Center,Admin Block,3
-Garden Park,Bus Stop,2
-Bus Stop,Cafeteria,3
-Cafeteria,Research Block,4
-Research Block,Innovation Center,3
-Workshop,Research Block,5
-Lecture Hall B,Lecture Hall Complex,3
-Lecture Hall B,Workshop,4
+Student Activity Center,Workshop,3
+Workshop,Medical Center,2
+Medical Center,Library,3
+Research Block,CSE Building,4
+Research Block,Workshop,5
+Innovation Lab,Startup Incubator,3
+Startup Incubator,Robotics Bay,4
+Robotics Bay,Testing Ground,2
+Testing Ground,Control Tower,3
+Control Tower,Innovation Lab,4
+# Lost Hut is intentionally isolated (no edge to others)

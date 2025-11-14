@@ -1,23 +1,23 @@
 #include "../include/dsu.h"
+#include <algorithm>
 
-DSU::DSU(int n) : parent(n), rank(n, 0) {
-    for (int i = 0; i < n; ++i) parent[i] = i;
+DSU::DSU(int n) : parent(n), rankv(n, 0) {
+    for (int i = 0; i < n; i++)
+        parent[i] = i;
 }
 
 int DSU::find(int x) {
-    if (x < 0 || x >= (int)parent.size()) return x;
-    if (parent[x] != x) parent[x] = find(parent[x]);
+    if (parent[x] != x)
+        parent[x] = find(parent[x]);
     return parent[x];
 }
 
 bool DSU::unite(int x, int y) {
-    if (x < 0 || y < 0 || x >= (int)parent.size() || y >= (int)parent.size()) return false;
-    int px = find(x);
-    int py = find(y);
-    if (px == py) return false;
-
-    if (rank[px] < rank[py]) parent[px] = py;
-    else if (rank[px] > rank[py]) parent[py] = px;
-    else { parent[py] = px; rank[px]++; }
+    x = find(x);
+    y = find(y);
+    if (x == y) return false;
+    if (rankv[x] < rankv[y]) std::swap(x, y);
+    parent[y] = x;
+    if (rankv[x] == rankv[y]) rankv[x]++;
     return true;
 }

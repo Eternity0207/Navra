@@ -7,29 +7,19 @@
 
 struct RouteResult {
     std::vector<int> attractionIds;
-    double totalTime;
+    double totalTime = 0.0;
     std::string algorithm;
-    
-    RouteResult() : totalTime(0), algorithm("") {}
 };
 
 class RouteOptimizer {
 private:
     Graph graph;
-    
-    // Build distance matrix for TSP
-    std::vector<std::vector<double>> buildDistanceMatrix(const std::vector<int>& locations);
-
 public:
-    RouteOptimizer() {}
-    
+    RouteOptimizer() = default;
     void setGraph(const Graph& g) { graph = g; }
-    
-    // Compute optimal route (main function)
+
     RouteResult computeOptimalRoute(const std::vector<int>& locations, bool flexibleOrder);
-    
-    // Helper to evaluate and construct route result
-    RouteResult evaluateRoute(const std::vector<int>& route, const std::string& algorithmName);
+    RouteResult computeFullGraphRoute();
 };
 
-#endif
+#endif // ROUTE_OPTIMIZER_H

@@ -1,21 +1,19 @@
 name,category,rating,duration,fee,popularity,latitude,longitude
 Main Gate,Entry,4.5,5,0,1000,26.2621,73.0281
-CSE Building,Academic,4.7,30,0,900,26.2623,73.0287
+Admin Block,Administration,4.3,20,0,700,26.2623,73.0289
 Library,Academic,4.8,45,0,850,26.2624,73.0284
+CSE Building,Academic,4.7,30,0,900,26.2623,73.0287
 Dining Hall,Food,4.0,25,50,700,26.2622,73.0279
 Hostel A,Residence,4.1,20,0,650,26.2620,73.0283
-Lecture Hall Complex,Academic,4.6,40,0,800,26.2625,73.0286
 Sports Complex,Sports,4.4,60,0,750,26.2630,73.0290
-Innovation Center,Academic,4.5,50,0,820,26.2627,73.0282
-Canteen,Food,4.2,15,30,600,26.2626,73.0280
-Medical Center,Health,4.3,25,0,680,26.2628,73.0285
-Admin Block,Administration,4.1,20,0,700,26.2623,73.0289
-Parking Lot,Utility,3.8,5,0,400,26.2629,73.0288
-Garden Park,Leisure,4.0,10,0,500,26.2621,73.0284
-Bus Stop,Transport,4.2,5,0,550,26.2620,73.0287
-Cafeteria,Food,4.3,20,40,650,26.2624,73.0281
+Student Activity Center,Activity,4.6,35,0,760,26.2632,73.0291
 Research Block,Academic,4.7,50,0,880,26.2626,73.0283
-Old Boys Hostel,Residence,4.1,20,0,620,26.2631,73.0292
-Student Activity Center,Activity,4.4,35,0,760,26.2632,73.0291
-Lecture Hall B,Academic,4.5,30,0,810,26.2627,73.0288
 Workshop,Utility,4.0,45,0,580,26.2628,73.0289
+Medical Center,Health,4.3,25,0,680,26.2628,73.0285
+Parking Lot,Utility,3.8,5,0,400,26.2629,73.0288
+Innovation Lab,Tech,4.9,40,0,930,26.2642,73.0301
+Startup Incubator,Tech,4.8,60,0,920,26.2645,73.0304
+Robotics Bay,Tech,4.7,55,0,910,26.2641,73.0307
+Testing Ground,Tech,4.6,50,0,890,26.2643,73.0310
+Control Tower,Tech,4.4,35,0,850,26.2644,73.0309
+Lost Hut,Mystery,3.0,10,0,50,26.2610,73.0320

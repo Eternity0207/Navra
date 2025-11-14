@@ -1,0 +1,58 @@
+.error-wrapper {
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.error-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  color: #991b1b;
+}
+
+.dark .error-box {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.error-box svg {
+  flex-shrink: 0;
+  color: #dc2626;
+}
+
+.dark .error-box svg {
+  color: #f87171;
+}
+
+.error-text {
+  flex: 1;
+}
+
+.error-text h4 {
+  font-size: 1.0625rem;
+  margin-bottom: 0.375rem;
+  font-weight: 600;
+}
+
+.error-text p {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.error-close {
+  background: transparent;
+  color: inherit;
+  padding: 0.375rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s;
+}
+
+.error-close:hover {
+  background: rgba(220, 38, 38, 0.12);
+}

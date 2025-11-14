@@ -1,0 +1,135 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(12px);
+}
+
+.navbar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: white;
+  border-radius: var(--radius-md);
+}
+
+.navbar-center {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  padding: 0.625rem 1.25rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: all var(--transition);
+}
+
+.nav-link:hover {
+  color: var(--color-primary);
+  background: var(--color-bg-secondary);
+}
+
+.nav-link.active {
+  color: white;
+  background: var(--color-primary);
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  transition: all var(--transition);
+}
+
+.theme-toggle:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-primary);
+}
+
+.mobile-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.mobile-menu {
+  display: none;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .navbar-center {
+    display: none;
+  }
+
+  .mobile-toggle {
+    display: flex;
+  }
+
+  .mobile-menu {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .mobile-link {
+    padding: 0.75rem 1rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: all var(--transition);
+  }
+
+  .mobile-link:hover {
+    background: var(--color-bg-secondary);
+  }
+
+  .mobile-link.active {
+    color: var(--color-primary);
+    background: var(--color-bg-secondary);
+  }
+}

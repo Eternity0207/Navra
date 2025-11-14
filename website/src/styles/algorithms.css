@@ -1,0 +1,145 @@
+.algorithms {
+  padding-top: 70px;
+  min-height: 100vh;
+}
+
+.algorithms-header {
+  text-align: center;
+  padding: 3rem 2rem 2rem;
+}
+
+.algorithms-header h1 {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.algorithms-header p {
+  font-size: 1.125rem;
+  color: var(--color-text-secondary);
+}
+
+.mode-explanation {
+  max-width: 1200px;
+  margin: 0 auto 3rem;
+  padding: 0 2rem;
+}
+
+.mode-explanation h2 {
+  font-size: 1.75rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.mode-card {
+  padding: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.mode-card h3 {
+  font-size: 1.125rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-primary);
+}
+
+.mode-card p {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.algorithms-grid {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.algo-card {
+  padding: 2rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition);
+}
+
+.algo-card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary);
+}
+
+.algo-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+
+.algo-card h3 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.algo-meta {
+  margin-bottom: 1rem;
+}
+
+.complexity {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-family: 'Courier New', monospace;
+  border-radius: 0.25rem;
+}
+
+.algo-use {
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.algo-description {
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  font-size: 0.9375rem;
+}
+
+.algo-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.algo-features li {
+  position: relative;
+  padding-left: 1.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.algo-features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--color-success);
+  font-weight: 700;
+}
